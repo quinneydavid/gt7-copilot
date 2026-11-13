@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.3
+Page layout only.
+
+- Live: the tiles are five to a row on a desktop (seven before), and names in a tile (status, car, track, tune) are set in smaller type than numbers, so a car name no longer wraps over three lines.
+- Track: the Corners table fits its card on a desktop and no longer scrolls sideways there.
+- Every page can be scrolled until its last card is clear of the Ask button.
+- README: what the copilot does, with tuning from a screenshot and talking to it described first.
+
 ## 0.13.2
 - The two GitHub workflow files failed to load (a colon inside two unquoted step names), so 0.13.1 was never tested or built there. No change to the app. This is the first version with published images.
 

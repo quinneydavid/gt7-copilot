@@ -37,13 +37,15 @@ nav a[aria-current=page]{color:var(--text);border-bottom-color:var(--accent);fon
 @media (max-width:720px){.bar{gap:10px;padding:0 12px}.brand span{display:none}#liveChip .lbl{display:none}}
 
 /* ---- layout ---- */
-main{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 88px}   /* the bottom: room to scroll the last card clear of the Ask button */
 .pagehead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:4px 0 16px}
 .pagehead h1{font-size:26px;font-weight:650;margin:0;letter-spacing:-.01em}
 .pagehead .sub{color:var(--mut);font-size:14px;padding-bottom:3px}
 .crumb{font-size:13px;color:var(--mut);margin-bottom:6px}
 .grid{display:grid;gap:12px}
 .tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+#liveTiles{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}   /* ten tiles, some with names in them: five a row on a desktop */
+@media (max-width:520px){#liveTiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .split{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
@@ -57,6 +59,7 @@ main{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
 .tile .k{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
 .tile .v{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:2px}
 .tile .v small{font-size:15px;color:var(--mut);font-weight:500}
+.tile .v .big{display:block;font-size:19px;line-height:1.3;padding:5px 0 4px;overflow-wrap:anywhere}   /* words, not a number: as tall as a number on one line */
 .tile .n{color:var(--text2);font-size:13px;margin-top:2px}
 .mut{color:var(--mut)}.small{font-size:13px}.num{font-variant-numeric:tabular-nums}
 .btn{padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--text);cursor:pointer;display:inline-block;font-size:14px}
@@ -78,6 +81,7 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--surface2)}
 td.r,th.r{text-align:right;padding-right:0}
 .scroll{overflow-x:auto}
 .scroll table{min-width:480px}
+@media (min-width:901px){.scroll table{min-width:0}}   /* beside another card the table fits the card; on a phone it scrolls sideways */
 .empty{color:var(--mut);padding:28px 8px;text-align:center}
 .empty b{display:block;color:var(--text2);font-size:16px;margin-bottom:4px}
 .note{font-size:13.5px;margin-top:8px}.note.ok{color:var(--good)}.note.bad{color:var(--crit)}
@@ -714,19 +718,19 @@ function next(){if(playing||!queue.length)return;const ev=queue.shift();
   playing=true;const a=new Audio(ev.url);a.onended=a.onerror=()=>{playing=false;next()};
   a.play().catch(()=>{playing=false;speakFallback(ev.text);next()})}
 // SimHub on the sim PC, as the earpiece reports it: the program running, the game it is set to, data arriving.
-function simhubTile(ep,live){const big=x=>`<span style="font-size:19px">${x}</span>`,gt7=/gran\s*turismo\s*7|gt7/i.test(ep.simhub_game||'');
+function simhubTile(ep,live){const big=x=>`<span class="big">${x}</span>`,gt7=/gran\s*turismo\s*7|gt7/i.test(ep.simhub_game||'');
   let c='on',v='Running',n='';
   if(!ep.simhub){c='bad';v='Not running';n='start SimHub on the sim PC'}
   else if(ep.simhub_api===false){c='warn';v='Running';n='it does not answer yet (still starting, or its web server is off)'}
   else if(ep.simhub_game&&!gt7){c='warn';v='Wrong game';n='set to '+esc(ep.simhub_game)+', choose Gran Turismo 7 in SimHub'}
   else if(ep.simhub_game){if(ep.simhub_data)n='Gran Turismo 7 · receiving the car\'s data';else if(live){c='warn';n='Gran Turismo 7 · no data from the console, though the car is on track'}else n='Gran Turismo 7 · waiting for the car to be on track'}
   return tile('SimHub',big(`<span class="dot ${c}"></span> ${v}`),n)}
-function renderLive(s){const n=s.now,tr=s.track,big=x=>`<span style="font-size:19px">${x}</span>`;
+function renderLive(s){const n=s.now,tr=s.track,big=x=>`<span class="big">${x}</span>`;
   $('liveChip').innerHTML=`<span class="dot ${s.live?'on':''}"></span><span class="lbl">${s.live?'On track'+(tr&&tr.name?' · '+esc(tr.name):''):'Idle'}</span>`;
   $('navPhone').hidden=!s.phone_on;askReady=!!s.ask;$('askBtn').hidden=!askReady||!$('askPanel').hidden;
   if($('p-live').hidden)return;
   const d=s.delta,dTxt=d==null?'–':sgn(d),dNote=d==null?'needs a best lap on this track':(d<=0?'▲ ahead of your best':'▼ behind your best');
-  let h=tile('Status',`<span class="dot ${s.live?'on':''}"></span> ${s.live?'On track':'Idle'}`,s.live?'telemetry arriving':'waiting for the car to be on track');
+  let h=tile('Status',big(`<span class="dot ${s.live?'on':''}"></span> ${s.live?'On track':'Idle'}`),s.live?'telemetry arriving':'waiting for the car to be on track');
   h+=tile('Car',s.car?big(`<a href="#cars/${s.car}" style="color:inherit">${esc(s.car_name||('Car '+s.car))}</a>`):'–',s.tune&&s.tune.on_file?'settings sheet on file':(s.car?'no settings sheet on file':''));
   h+=tile('Track',tr?big(`<a href="#tracks/${tr.id}" style="color:inherit">${esc(tr.name||('Track '+tr.id+' (not named yet)'))}</a>`):big('<span class="mut">'+(s.live?(s.track_guess?'looks like '+esc(s.track_guess):'learning it: finish a lap'):'–')+'</span>'),tr?(tr.length/1000).toFixed(2)+' km · '+tr.corners+' corners':(s.track_guess?'the layout is confirmed at the line':''));
   h+=tile('Lap',(s.lap??'–')+(s.total_laps>0?'<small> / '+s.total_laps+'</small>':''),'best '+fmt(s.best_ms));
