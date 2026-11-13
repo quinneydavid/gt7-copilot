@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Dependencies (no voice model: the tests do not speak)
+      - name: "Dependencies (no voice model: the tests do not speak)"
         run: pip install numpy pycryptodome
       - name: Compile
         run: python -m compileall -q gt7copilot earpiece phone tools && bash -n earpiece/setup-mac.sh

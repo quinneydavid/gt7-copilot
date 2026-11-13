@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.13.2
+- The two GitHub workflow files failed to load (a colon inside two unquoted step names), so 0.13.1 was never tested or built there. No change to the app. This is the first version with published images.
+
 ## 0.13.1
 The first version published on GitHub. Fixes from a review before publication; no new features.
 

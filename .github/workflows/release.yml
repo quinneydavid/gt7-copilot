@@ -53,7 +53,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
-      - name: Phone image (amd64 only: the emulator needs x86-64)
+      - name: "Phone image (amd64 only: the emulator needs x86-64)"
         uses: docker/build-push-action@v6
         with:
           context: phone
