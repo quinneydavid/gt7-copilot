@@ -1,0 +1,10 @@
+.venv/
+captures/
+data/laps/
+data/copilot.db*
+data/settings.json*
+data/tts-cache/
+tts/
+__pycache__/
+.env
+local/

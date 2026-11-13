@@ -1,0 +1,1138 @@
+{
+ "reviewed": "2026-11-11",
+ "rows": [
+  {
+   "kind": "baseline",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "front",
+   "drivetrain": [
+    "FF",
+    "FR",
+    "MR",
+    "4WD"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": "min",
+   "unit": "range",
+   "text": "Front springs at the softest setting the car allows.",
+   "tradeoff": null,
+   "scope": "racing tyres",
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k001"
+  },
+  {
+   "kind": "baseline",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "rear",
+   "drivetrain": [
+    "FF",
+    "4WD"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": "50-60%",
+   "unit": "range",
+   "text": "Rear at 50-60 % of the car's range, for maximum rotation.",
+   "tradeoff": null,
+   "scope": "racing tyres",
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k002"
+  },
+  {
+   "kind": "baseline",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "rear",
+   "drivetrain": [
+    "FR"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": "min or 20-40%",
+   "unit": "range",
+   "text": "Rear at the softest setting for traction, or 20-40 % of the range for rotation.",
+   "tradeoff": null,
+   "scope": "racing tyres",
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k003"
+  },
+  {
+   "kind": "baseline",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "rear",
+   "drivetrain": [
+    "MR"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": "min",
+   "unit": "range",
+   "text": "Rear at the softest setting too, to prevent oversteer into corners. Raise the rear only once the car is stable on entry.",
+   "tradeoff": null,
+   "scope": "racing tyres",
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k004"
+  },
+  {
+   "kind": "baseline",
+   "setting": "suspension.natural_frequency_hz",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "As a default, run the rear slightly stiffer than the front; match overall stiffness to the downforce level and tyre compound.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k005"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.natural_frequency_hz",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Front softer than rear improves rotation, stability and predictability in most cars.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k006"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": null,
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Soft front with a stiff rear rotates in every phase of the corner.",
+   "tradeoff": "can turn into oversteer if overdone; suits cars that are stable on the throttle",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k007"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": null,
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Soft front and soft rear is a stable platform with good traction out of corners.",
+   "tradeoff": "gives up some rotation; suits cars that rotate well but snap on the throttle",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k008"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": null,
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Stiff front with a soft rear is not advised: it kills rotation. Correct oversteer with anti-roll bars and dampers instead.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k009"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.natural_frequency_hz",
+   "end": "rear",
+   "drivetrain": [
+    "MR"
+   ],
+   "symptom": "entry_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Soften the rear springs for more rear grip.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Natural Frequency in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-natural-frequency-in-gran-turismo-7/407"
+   },
+   "id": "k010"
+  },
+  {
+   "kind": "baseline",
+   "setting": "differential.initial_torque",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": "low",
+   "unit": null,
+   "text": "Start with initial torque low.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k011"
+  },
+  {
+   "kind": "baseline",
+   "setting": "differential.acceleration_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": "mid",
+   "unit": null,
+   "text": "Start with acceleration sensitivity in the middle of the range.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k012"
+  },
+  {
+   "kind": "baseline",
+   "setting": "differential.braking_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": "low",
+   "unit": null,
+   "text": "Start with braking sensitivity low.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k013"
+  },
+  {
+   "kind": "baseline",
+   "setting": "differential.acceleration_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Set it as high as you are comfortable with, for predictable rotation on the power.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k014"
+  },
+  {
+   "kind": "baseline",
+   "setting": "differential.braking_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Set it as low as you can manage, to avoid understeer into corners.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k015"
+  },
+  {
+   "kind": "effect",
+   "setting": "differential.initial_torque",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Preload: how much force it takes before the differential starts to work. Higher = it changes between open and locked sooner.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k016"
+  },
+  {
+   "kind": "effect",
+   "setting": "differential.acceleration_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "A fully locked differential is snappy and breaks traction easily; in front-wheel-drive cars it causes understeer.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k017"
+  },
+  {
+   "kind": "effect",
+   "setting": "differential.acceleration_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "A fully open differential is stable and does not snap.",
+   "tradeoff": "less drive out of corners; the inside wheel spins",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k018"
+  },
+  {
+   "kind": "fix",
+   "setting": "differential.acceleration_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": "exit_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "The car is too snappy on the power: lower acceleration sensitivity.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k019"
+  },
+  {
+   "kind": "fix",
+   "setting": "differential.acceleration_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": "one_wheel_spin",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "The inside wheel spins: raise acceleration sensitivity.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k020"
+  },
+  {
+   "kind": "fix",
+   "setting": "differential.braking_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": "entry_oversteer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "The car oversteers into corners: raise braking sensitivity.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "id": "k021"
+  },
+  {
+   "kind": "fix",
+   "setting": "differential.braking_sensitivity",
+   "end": null,
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "The car understeers into corners: lower braking sensitivity.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k022"
+  },
+  {
+   "kind": "example",
+   "setting": null,
+   "end": null,
+   "drivetrain": [
+    "MR"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Porsche 911 RSR: initial 5, acceleration 15, braking sensitivity high. Very stable into corners.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "car": 3311,
+   "car_name": "Porsche 911 RSR (991) '17",
+   "sheet": {
+    "differential": {
+     "initial_torque": [
+      null,
+      5
+     ],
+     "acceleration_sensitivity": [
+      null,
+      15
+     ]
+    }
+   },
+   "id": "k023"
+  },
+  {
+   "kind": "example",
+   "setting": null,
+   "end": null,
+   "drivetrain": [
+    "FR"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Aston Martin V12 Vantage GT3: initial low, acceleration 35, braking sensitivity low. The car is tail-happy, so more lock on the power.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Limited Slip Differential (LSD) in Gran Turismo 7",
+    "url": "https://www.dg-edge.com/articles/guides-tuning/understanding-limited-slip-differential-lsd-in-gran-turismo-7/408"
+   },
+   "car": 2131,
+   "car_name": "Aston Martin V12 Vantage GT3 '12",
+   "sheet": {
+    "differential": {
+     "acceleration_sensitivity": [
+      null,
+      35
+     ]
+    }
+   },
+   "id": "k024"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_compression_pct",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "entry_oversteer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Oversteer into the corner: raise front compression.",
+   "tradeoff": "less rotation",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k025"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_expansion_pct",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "entry_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Oversteer into the corner: lower rear expansion (rebound).",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k026"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_compression_pct",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Understeer into the corner: lower front compression.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k027"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_expansion_pct",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Understeer into the corner: raise rear expansion (rebound).",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k028"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_compression_pct",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "exit_understeer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Understeer out of the corner: raise rear compression.",
+   "tradeoff": "less rear traction",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k029"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_expansion_pct",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "exit_understeer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Understeer out of the corner: raise front expansion (rebound).",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k030"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_compression_pct",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "exit_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Oversteer out of the corner: lower rear compression.",
+   "tradeoff": "less rotation out of the corner",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k031"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.damping_expansion_pct",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "exit_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Oversteer out of the corner: lower front expansion (rebound).",
+   "tradeoff": "less rotation out of the corner",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k032"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.damping_compression_pct",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Too much damping at one end causes chatter and a lack of grip at the other end; keep compression and expansion in balance.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Damper Ratios in Gran Turismo 7",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-damper-ratios-in-gran-turismo-7/405"
+   },
+   "id": "k033"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.damping_expansion_pct",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "For racing, expansion (rebound) is set higher than compression.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Traxion: Gran Turismo 7 front-wheel drive setup guide",
+    "url": "https://traxion.gg/gran-turismo-7-front-wheel-drive-setup-guide-2/"
+   },
+   "id": "k034"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.anti_roll_bar",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Scale 1-10, a higher number is stiffer.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Anti-Roll Bars (ARBs)",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-anti-roll-bars-arbs/406"
+   },
+   "id": "k035"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.anti_roll_bar",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Understeer into or through the corner: soften the front bar.",
+   "tradeoff": "too far and the car turns unstable",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Anti-Roll Bars (ARBs)",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-anti-roll-bars-arbs/406"
+   },
+   "id": "k036"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.anti_roll_bar",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Understeer into or through the corner: stiffen the rear bar.",
+   "tradeoff": "too far and the car turns unstable",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Anti-Roll Bars (ARBs)",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-anti-roll-bars-arbs/406"
+   },
+   "id": "k037"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.anti_roll_bar",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "entry_oversteer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Oversteer into or through the corner: stiffen the front bar.",
+   "tradeoff": "too far causes understeer",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Anti-Roll Bars (ARBs)",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-anti-roll-bars-arbs/406"
+   },
+   "id": "k038"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.anti_roll_bar",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "entry_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Oversteer into or through the corner: soften the rear bar.",
+   "tradeoff": "too far causes understeer",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Anti-Roll Bars (ARBs)",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-anti-roll-bars-arbs/406"
+   },
+   "id": "k039"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.anti_roll_bar",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": "exit_oversteer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Not enough rear traction out of corners: soften the rear bar (and stiffen the front).",
+   "tradeoff": "too far causes understeer",
+   "scope": null,
+   "source": {
+    "title": "DG Edge: Understanding Anti-Roll Bars (ARBs)",
+    "url": "https://dg-edge.com/articles/guides-tuning/understanding-anti-roll-bars-arbs/406"
+   },
+   "id": "k040"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.toe_deg",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": null,
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Toe-out helps the first part of turn-in.",
+   "tradeoff": "slower in long, settled corners",
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k041"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.toe_deg",
+   "end": "rear",
+   "drivetrain": [
+    "FR",
+    "MR",
+    "RR"
+   ],
+   "symptom": null,
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Toe-in steadies a rear-wheel-drive car under braking and on the power. Rear toe changes are clearly felt.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k042"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.toe_deg",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "The further from zero, the more the tyres scrub: more tyre wear, less straight-line speed.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k043"
+  },
+  {
+   "kind": "fix",
+   "setting": "suspension.toe_deg",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Poor turn-in: consider front toe-out.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k044"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.ride_height_mm",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Ride height has the most drastic effect on handling of any setting.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k045"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.ride_height_mm",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Rear higher than front (positive rake) gives sharper cornering; rear lower than front raises top speed.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k046"
+  },
+  {
+   "kind": "baseline",
+   "setting": "suspension.ride_height_mm",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": "min",
+   "unit": "range",
+   "text": "As low as the car goes without bottoming out, for most tarmac racing.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Traxion: Gran Turismo 7 front-wheel drive setup guide",
+    "url": "https://traxion.gg/gran-turismo-7-front-wheel-drive-setup-guide-2/"
+   },
+   "id": "k047"
+  },
+  {
+   "kind": "baseline",
+   "setting": "aero.downforce",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": "max",
+   "unit": "range",
+   "text": "Set downforce first: most cornering grip comes from it. Front at maximum for turn-in.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k048"
+  },
+  {
+   "kind": "baseline",
+   "setting": "aero.downforce",
+   "end": "rear",
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Then adjust the rear wing for high-speed balance.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k049"
+  },
+  {
+   "kind": "fix",
+   "setting": "aero.downforce",
+   "end": "front",
+   "drivetrain": null,
+   "symptom": "understeer",
+   "direction": "raise",
+   "value": null,
+   "unit": null,
+   "text": "Poor turn-in: maximum front downforce.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k050"
+  },
+  {
+   "kind": "fix",
+   "setting": "aero.downforce",
+   "end": null,
+   "drivetrain": null,
+   "symptom": "gearing_long",
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "Top speed suffers from drag: lower front and rear together.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k051"
+  },
+  {
+   "kind": "effect",
+   "setting": "brake_balance",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Towards the front: more stability and stopping power. Towards the rear: better trail braking and rotation, easier on the front tyres.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k052"
+  },
+  {
+   "kind": "effect",
+   "setting": "ballast_kg",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Avoid ballast where possible and run the car as light as allowed. If it is needed, where it sits changes the weight balance a lot. Set ballast before suspension.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k053"
+  },
+  {
+   "kind": "baseline",
+   "setting": "transmission.gears",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "A long first gear, a short top gear, and gaps that narrow as you go up. Peaky engines need closer ratios.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k054"
+  },
+  {
+   "kind": "effect",
+   "setting": "tyres",
+   "end": null,
+   "drivetrain": null,
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "The tyre compound decides how stiff the suspension and how much downforce the car should run.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Coach Dave Academy: Gran Turismo 7 tuning explained",
+    "url": "https://coachdaveacademy.com/tutorials/gran-turismo-7-tuning-explained"
+   },
+   "id": "k055"
+  },
+  {
+   "kind": "example",
+   "setting": null,
+   "end": null,
+   "drivetrain": [
+    "FF"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "Honda Civic Type R (EK) '98 at Brands Hatch Indy, time trial: the author's final values. Stiff-front/soft-rear springs (3.20/1.46 Hz) were 'horrible'; braking sensitivity at 5 caused oversteer into corners; rear ballast gave no lap time.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Traxion: Gran Turismo 7 front-wheel drive setup guide",
+    "url": "https://traxion.gg/gran-turismo-7-front-wheel-drive-setup-guide-2/"
+   },
+   "car": 204,
+   "car_name": "Honda Civic Type R (EK) '98",
+   "track": "Brands Hatch Indy Circuit",
+   "sheet": {
+    "suspension": {
+     "ride_height_mm": [
+      85,
+      85
+     ],
+     "natural_frequency_hz": [
+      2.05,
+      2.05
+     ],
+     "anti_roll_bar": [
+      6,
+      1
+     ],
+     "negative_camber_deg": [
+      5.0,
+      null
+     ],
+     "toe_deg": [
+      0.14,
+      -0.1
+     ]
+    },
+    "differential": {
+     "initial_torque": [
+      20,
+      null
+     ],
+     "acceleration_sensitivity": [
+      40,
+      null
+     ]
+    }
+   },
+   "id": "k056"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.anti_roll_bar",
+   "end": null,
+   "drivetrain": [
+    "FF"
+   ],
+   "symptom": null,
+   "direction": null,
+   "value": null,
+   "unit": null,
+   "text": "On a front-wheel-drive car a softer front and stiffer rear bar encourages rotation; the softest front with the stiffest rear was a few tenths slower.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Traxion: Gran Turismo 7 front-wheel drive setup guide",
+    "url": "https://traxion.gg/gran-turismo-7-front-wheel-drive-setup-guide-2/"
+   },
+   "id": "k057"
+  },
+  {
+   "kind": "effect",
+   "setting": "suspension.toe_deg",
+   "end": "rear",
+   "drivetrain": [
+    "FF"
+   ],
+   "symptom": null,
+   "direction": "lower",
+   "value": null,
+   "unit": null,
+   "text": "On a front-wheel-drive car a little rear toe-out helps the rear steer the car through the corner.",
+   "tradeoff": null,
+   "scope": null,
+   "source": {
+    "title": "Traxion: Gran Turismo 7 front-wheel drive setup guide",
+    "url": "https://traxion.gg/gran-turismo-7-front-wheel-drive-setup-guide-2/"
+   },
+   "id": "k058"
+  }
+ ]
+}

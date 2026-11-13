@@ -1,0 +1,17 @@
+.venv
+.git
+.github
+captures
+tts
+__pycache__
+**/__pycache__
+data/laps
+data/copilot.db*
+data/settings.json*
+data/tts-cache
+phone
+docs
+tests
+tools
+local
+.env

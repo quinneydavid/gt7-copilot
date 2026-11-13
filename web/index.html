@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0c0e13">
+<link rel="icon" href="/icon-192.png">
+<title>GT7 Copilot</title>
+<style>
+:root{color-scheme:dark;--bg:#0c0e13;--surface:#151922;--surface2:#1c212c;--line:#283040;--text:#f1f3f7;--text2:#b9c1cf;--mut:#808a9a;
+  --s1:#6d93f2;--s2:#f08a4b;--good:#3ecf8e;--crit:#ef5f5f;--warn:#ffd84a;--accent:#e5383b;--blue1:#4b62c4;--blue2:#5f82e2;--blue3:#4058b6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--s1);text-decoration:none}a:hover{text-decoration:underline}
+button,input,select{font:inherit}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+
+/* ---- top bar ---- */
+header{position:sticky;top:0;z-index:10;background:rgba(12,14,19,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{max-width:1240px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:18px;height:54px}
+.brand{font-weight:700;letter-spacing:.14em;font-size:14px;color:var(--text);white-space:nowrap}
+.brand b{color:var(--accent)}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;align-self:stretch}
+nav::-webkit-scrollbar{display:none}
+nav a{display:flex;align-items:center;padding:0 12px;color:var(--text2);font-size:14px;border-bottom:2px solid transparent;white-space:nowrap}
+nav a:hover{color:var(--text);text-decoration:none}
+nav a[aria-current=page]{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--text2);white-space:nowrap;background:var(--surface)}
+.chip:hover{text-decoration:none;border-color:var(--mut)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mut);flex:none}
+.dot.on{background:var(--good);box-shadow:0 0 0 3px rgba(62,207,142,.18)}
+.dot.bad{background:var(--crit);box-shadow:0 0 0 3px rgba(239,95,95,.18)}.dot.warn{background:var(--warn);box-shadow:0 0 0 3px rgba(255,216,74,.18)}
+@media (max-width:720px){.bar{gap:10px;padding:0 12px}.brand span{display:none}#liveChip .lbl{display:none}}
+
+/* ---- layout ---- */
+main{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+.pagehead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:4px 0 16px}
+.pagehead h1{font-size:26px;font-weight:650;margin:0;letter-spacing:-.01em}
+.pagehead .sub{color:var(--mut);font-size:14px;padding-bottom:3px}
+.crumb{font-size:13px;color:var(--mut);margin-bottom:6px}
+.grid{display:grid;gap:12px}
+.tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.split{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+@media (max-width:900px){.two,.three,.split{grid-template-columns:minmax(0,1fr)}}
+.gap{margin-top:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.card h2{font-size:15px;margin:0 0 2px;font-weight:600}
+.card .sub{color:var(--mut);font-size:13px;margin-bottom:12px}
+.card.link{display:block;color:inherit;transition:border-color .12s,transform .12s}
+.card.link:hover{border-color:var(--mut);text-decoration:none;transform:translateY(-1px)}
+.tile .k{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
+.tile .v{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:2px}
+.tile .v small{font-size:15px;color:var(--mut);font-weight:500}
+.tile .n{color:var(--text2);font-size:13px;margin-top:2px}
+.mut{color:var(--mut)}.small{font-size:13px}.num{font-variant-numeric:tabular-nums}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--text);cursor:pointer;display:inline-block;font-size:14px}
+.btn:hover{border-color:var(--mut);text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:default}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--text2);margin:0 4px 4px 0;white-space:nowrap}
+.pill.good{border-color:transparent;background:rgba(62,207,142,.14);color:var(--good)}
+.pill.warn{border-color:transparent;background:rgba(255,216,74,.14);color:var(--warn)}
+.pill.bad{border-color:transparent;background:rgba(239,95,95,.14);color:var(--crit)}
+.pill.blue{border-color:transparent;background:rgba(109,147,242,.16);color:var(--s1)}
+h3{font-size:12px;margin:16px 0 6px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;color:var(--mut);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 6px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px 8px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.row{cursor:pointer}tr.row:hover td{background:var(--surface2)}
+td.r,th.r{text-align:right;padding-right:0}
+.scroll{overflow-x:auto}
+.scroll table{min-width:480px}
+.empty{color:var(--mut);padding:28px 8px;text-align:center}
+.empty b{display:block;color:var(--text2);font-size:16px;margin-bottom:4px}
+.note{font-size:13.5px;margin-top:8px}.note.ok{color:var(--good)}.note.bad{color:var(--crit)}
+.banner{border-left:3px solid var(--warn);margin-bottom:12px}
+input[type=text],input[type=search],input[type=password],input[type=number],select{padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
+input[type=search]{width:100%}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar .grow{flex:1;min-width:200px}
+.seg{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:16px 0;overflow-x:auto;scrollbar-width:none}
+.seg a{padding:9px 14px;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;font-size:14px;margin-bottom:-1px}
+.seg a:hover{color:var(--text);text-decoration:none}
+.seg a[aria-current=true]{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.seg .count{color:var(--mut);font-weight:400;margin-left:4px}
+
+/* ---- ranked bars ---- */
+.rank a{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:8px 0;border-bottom:1px solid var(--line);color:inherit}
+.rank a:last-child{border-bottom:0}.rank a:hover{text-decoration:none}.rank a:hover .t{color:var(--s1)}
+.rank .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .n{color:var(--text2);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rank .track{grid-column:1/-1;height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.rank .track i{display:block;height:100%;border-radius:3px;background:var(--s1)}
+
+/* ---- car cards ---- */
+.cars{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.carcard .name{font-weight:650;font-size:16px;line-height:1.25;margin-bottom:6px}
+.carcard .stats{display:flex;gap:16px;margin-top:10px;font-variant-numeric:tabular-nums}
+.carcard .stats div{font-size:18px;font-weight:650}.carcard .stats span{display:block;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.carcard .foot{margin-top:10px;color:var(--mut);font-size:13px}
+.hero{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(135deg,#1a2030 0%,#141821 60%,#1d1418 100%);padding:22px 22px 18px}
+.hero.pic{min-height:230px;display:flex;flex-direction:column;justify-content:flex-end}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero.pic::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,10,14,.05) 30%,rgba(8,10,14,.88) 100%)}
+.hero>div{position:relative;z-index:1}
+.hero h1{margin:0 0 8px;font-size:28px;font-weight:650;letter-spacing:-.01em}
+
+/* ---- the settings sheet, laid out like the game's Car Settings screen ---- */
+.gt{background:linear-gradient(165deg,var(--blue1) 0%,var(--blue2) 55%,var(--blue3) 100%);color:#fff;border-radius:12px;padding:16px 20px 20px}
+.gt .gttitle{background:rgba(255,255,255,.22);border-radius:6px;padding:7px 14px;text-align:center;font-weight:600;margin:0 auto 4px;max-width:440px}
+.gt .gtsub{text-align:center;font-size:12.5px;opacity:.88;margin-bottom:8px}
+.gt .gthead{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;font-size:13px;margin:6px 0 2px}
+.gt .gthead b{font-size:17px;font-variant-numeric:tabular-nums;margin-left:6px}
+.gt .gtcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 34px}
+.gt .gtpage{margin-top:16px;border-top:1px solid rgba(255,255,255,.35);padding-top:6px}
+.gt .gtsec{display:flex;align-items:center;gap:12px;font-weight:600;font-size:14px;margin:14px 0 6px}
+.gt .gtsec::before,.gt .gtsec::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.55)}
+.gt .gtrow{display:grid;grid-template-columns:minmax(0,1fr) 34px 96px 96px;gap:6px;align-items:center;margin:3px 0;font-size:13.5px}
+.gt .gtrow.one{grid-template-columns:minmax(0,1fr) 34px 198px}
+.gt .gtrow.tyre{grid-template-columns:54px minmax(0,1fr)}
+.gt .gtu{font-size:11px;opacity:.8;text-align:right}
+.gt .gthd{font-size:12px;opacity:.85;text-align:center}
+.gt .gtbox{background:#0a0c12;border-radius:3px;padding:4px 10px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;min-height:26px}
+.gt .gtrow.tyre .gtbox,.gt .gtbox.txt{text-align:left;font-weight:500}
+.gt .gtbox.chg{outline:2px solid var(--warn);color:var(--warn)}
+.gt .gtbox.chg small{display:block;font-weight:400;font-size:10.5px;color:#fff;opacity:.8}
+.gt .gtbox.dif{outline:2px solid #fff}
+.gt .gtlist{margin:14px 0 0;padding:0;list-style:none;font-size:13px}
+.gt .gtlist li{padding:5px 0;border-top:1px solid rgba(255,255,255,.25)}
+.gt .gtlist b{color:var(--warn)}
+@media (max-width:520px){.gt{padding:12px}.gt .gtrow{grid-template-columns:minmax(0,1fr) 26px 70px 70px}.gt .gtrow.one{grid-template-columns:minmax(0,1fr) 26px 146px}}
+
+/* ---- sessions list ---- */
+.day{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin:18px 0 6px}
+.srow{display:grid;grid-template-columns:54px minmax(0,1.3fr) minmax(0,1fr) 70px 140px;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);color:inherit}
+.srow:last-child{border-bottom:0}.srow:hover{background:var(--surface2);text-decoration:none}
+.srow .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .d{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.srow .b{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+.srow .m{color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums}
+.list.card{padding:0;overflow:hidden}
+@media (max-width:640px){.srow{grid-template-columns:44px minmax(0,1fr) 130px}.srow .hide{display:none}}
+
+/* ---- tracks ---- */
+.tracks{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.trackcard .mini{height:150px;margin:-4px 0 8px}
+.trackcard .name{font-weight:650;font-size:16px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--mut);font-size:11px;font-family:inherit}
+.mini svg{height:100%}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--text2);margin-bottom:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+#tip{position:fixed;pointer-events:none;background:#f1f3f7;color:#11141a;padding:6px 9px;border-radius:7px;font-size:12.5px;line-height:1.35;display:none;z-index:40;max-width:260px;white-space:pre-line}
+
+/* ---- live ---- */
+#said{font-size:24px;min-height:36px}
+.tyres{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:190px;margin-top:6px}
+.tyres div{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-variant-numeric:tabular-nums}
+.tyres span{display:block;color:var(--mut);font-size:11px}
+
+/* ---- screenshots ---- */
+.shots{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.shot{padding:0;overflow:hidden;cursor:pointer;text-align:left;color:inherit;display:flex;flex-direction:column;justify-content:flex-start;width:100%}
+.shot:hover{border-color:var(--mut)}
+.shot .im{aspect-ratio:16/9;background:#07080b center/cover no-repeat;display:block;width:100%;object-fit:cover}
+.shot .tx{padding:10px 12px 12px}
+.shot .tx .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot .tx .d{color:var(--mut);font-size:12.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#box{position:fixed;inset:0;z-index:30;background:rgba(5,6,9,.94);display:none;overflow:auto;padding:18px}
+#box .in{max-width:1300px;margin:0 auto}
+#box img{max-width:100%;max-height:74vh;display:block;margin:0 auto;border-radius:8px}
+#box .meta{max-width:900px;margin:14px auto 0}
+
+/* ---- phone ---- */
+.phonewrap{display:grid;grid-template-columns:minmax(280px,420px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.phonewrap{grid-template-columns:minmax(0,1fr)}}
+.phone{background:#000;border:10px solid #232834;border-radius:34px;overflow:hidden;aspect-ratio:9/19.2;max-height:82vh;margin:0 auto;width:100%}
+.phone iframe{width:100%;height:100%;border:0;display:block;background:#000}
+
+/* ---- ask ---- */
+#askBtn{position:fixed;right:18px;bottom:18px;z-index:20;border-radius:999px;padding:11px 20px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#askPanel{position:fixed;right:18px;bottom:18px;z-index:21;width:min(420px,calc(100vw - 24px));height:min(600px,calc(100vh - 90px));background:var(--surface);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#askPanel .hd{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+#askPanel .hd b{flex:1}
+#askLog{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+#askLog .q,#askLog .a{max-width:88%;padding:9px 12px;border-radius:12px;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+#askLog .q{align-self:flex-end;background:var(--blue3);color:#fff;border-bottom-right-radius:4px}
+#askLog .a{align-self:flex-start;background:var(--surface2);border-bottom-left-radius:4px}
+#askLog .a.err{color:var(--crit)}#askLog .a.wait{color:var(--mut)}
+#askLog .ex{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+#askLog .ex button{text-align:left}
+#askPanel form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+#askPanel input{flex:1;min-width:0}
+@media (max-width:520px){#askPanel{right:12px;bottom:12px}#askBtn{right:12px;bottom:12px}}
+
+/* ---- settings ---- */
+.set{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr);gap:8px 14px;align-items:start;margin-top:8px}
+@media (max-width:640px){.set{grid-template-columns:minmax(0,1fr)}}
+.set label{font-weight:600;padding-top:6px}
+.set input[type=text],.set input[type=password],.set input[type=number]{width:100%;max-width:460px}
+.set .help{color:var(--mut);font-size:13px;margin-top:2px}
+code{background:var(--surface2);border-radius:4px;padding:1px 5px;font-size:12.5px}
+details>summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <a class="brand" href="#home">GT7 <b>COPILOT</b></a>
+  <nav id="nav">
+    <a href="#home" data-p="home">Home</a>
+    <a href="#live" data-p="live">Live</a>
+    <a href="#cars" data-p="cars">Cars</a>
+    <a href="#tracks" data-p="tracks">Tracks</a>
+    <a href="#sessions" data-p="sessions">Sessions</a>
+    <a href="#screenshots" data-p="screenshots">Screenshots</a>
+    <a href="#phone" data-p="phone" id="navPhone" hidden>Phone</a>
+    <a href="#settings" data-p="settings">Settings</a>
+  </nav>
+  <span class="spacer"></span>
+  <a class="chip" href="#live" id="liveChip" title="Open the Live page"><span class="dot"></span><span class="lbl">connecting</span></a>
+</div></header>
+<main>
+  <section id="p-live" hidden>
+    <div class="pagehead"><h1>Live</h1><span class="sub" id="conn">connecting</span><span class="spacer"></span>
+      <button class="btn primary" id="start">Start audio here</button><button class="btn" id="test">Test voice</button><button class="btn" id="mute">Mute copilot</button></div>
+    <div class="card banner" id="needConsole" hidden>The console address is not set. Open <a href="#settings">Settings</a> and enter it.</div>
+    <div class="card" style="margin-bottom:12px"><div class="sub" style="margin:0">Last call</div><div id="said">Press Start audio here to hear the calls in this browser, then drive.</div></div>
+    <div class="grid tiles" id="liveTiles"></div>
+    <div class="grid two gap">
+      <div class="card"><h2>This session</h2><div class="sub" id="liveSub">No laps yet</div><div class="scroll"><table id="liveLaps"></table></div></div>
+      <div class="card"><h2>Recent calls</h2><div class="sub">What the copilot said</div><table id="log"></table></div>
+    </div>
+  </section>
+  <section id="p-main"></section>
+</main>
+<button class="btn primary" id="askBtn" hidden>Ask</button>
+<div id="askPanel" hidden><div class="hd"><b>Ask the copilot</b><span class="small mut" id="askAbout"></span><button class="btn small" id="askClear">Clear</button><button class="btn small" id="askX">Close</button></div>
+  <div id="askLog"></div><form id="askForm"><input type="text" id="askQ" placeholder="Ask about your laps, cars and settings" autocomplete="off" maxlength="400"><button class="btn primary" id="askGo">Ask</button></form></div>
+<div id="tip"></div>
+<div id="box"><div class="in"></div></div>
+<script>
+/* ================= helpers ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=ms=>{if(!ms||ms<=0)return'–';const s=ms/1000;return Math.floor(s/60)+':'+(s%60).toFixed(3).padStart(6,'0')};
+const sgn=(v,d=2)=>v==null?'–':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d);
+const dur=m=>m==null?'–':m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');
+const km=v=>v==null?'–':(v>=100?Math.round(v):v.toFixed(1));
+const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+const get=async p=>{const r=await fetch(p);return r.json()};
+const dayName=d=>{const t=new Date(d+'T12:00:00'),n=new Date(),diff=Math.round((new Date(n.getFullYear(),n.getMonth(),n.getDate())-new Date(t.getFullYear(),t.getMonth(),t.getDate()))/864e5);
+  return diff===0?'Today':diff===1?'Yesterday':t.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:t.getFullYear()===n.getFullYear()?undefined:'numeric'})};
+const ago=t=>{const m=Math.round((Date.now()/1000-t)/60);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'};
+const tip=$('tip');
+function showTip(e,text){tip.textContent=text;tip.style.display='block';const w=tip.offsetWidth,h=tip.offsetHeight;
+  tip.style.left=Math.min(innerWidth-w-8,e.clientX+14)+'px';tip.style.top=Math.max(8,e.clientY-h-12)+'px'}
+const hideTip=()=>tip.style.display='none';
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs={},parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
+function niceStep(range,n){const raw=range/n,p=Math.pow(10,Math.floor(Math.log10(raw)));const m=raw/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const tile=(k,v,n)=>`<div class="card tile"><div class="k">${esc(k)}</div><div class="v">${v}</div><div class="n">${n||'&nbsp;'}</div></div>`;
+const carPills=c=>[c.car_class,c.drivetrain,c.pp_stock?'PP '+c.pp_stock.toFixed(0)+' stock':'',c.power_hp?Math.round(c.power_hp)+' HP':'',c.weight_kg?Math.round(c.weight_kg)+' kg':''].filter(Boolean).map(x=>`<span class="pill">${esc(x)}</span>`).join('');
+const adminPost=async(path,body)=>{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-GT7C':'1'},body:JSON.stringify(body||{})});let d={};try{d=await r.json()}catch(e){}return d};
+let ADMIN=null;                                   // signed in on the Settings page? (asked once, refreshed by Settings)
+const isAdmin=async()=>{if(ADMIN==null){try{ADMIN=!!(await get('/api/settings')).signed_in}catch(e){ADMIN=false}}return ADMIN};
+const main=()=>$('p-main');
+const head=(title,sub,crumb,right)=>`${crumb?`<div class="crumb">${crumb}</div>`:''}<div class="pagehead"><h1>${title}</h1>${sub?`<span class="sub">${sub}</span>`:''}<span class="spacer"></span>${right||''}</div>`;
+const empty=(title,text)=>`<div class="card empty"><b>${title}</b>${text}</div>`;
+
+/* ================= router ================= */
+const PAGES={home:pageHome,live:null,cars:pageCars,tracks:pageTracks,sessions:pageSessions,screenshots:pageShots,phone:pagePhone,settings:pageSettings};
+const ALIAS={garage:'cars',tunes:'cars','':'home'};
+let ROUTE={page:'',args:[],q:new URLSearchParams()},seq=0;
+function parse(){const h=location.hash.replace(/^#/,''),[path,query]=h.split('?'),parts=path.split('/').filter(Boolean);
+  let page=parts[0]||'';page=ALIAS[page]||page;if(!(page in PAGES))page='home';
+  return{page,args:parts.slice(1),q:new URLSearchParams(query||'')}}
+async function route(){ROUTE=parse();const my=++seq;
+  for(const a of document.querySelectorAll('#nav a'))a.setAttribute('aria-current',a.dataset.p===ROUTE.page?'page':'false');
+  $('p-live').hidden=ROUTE.page!=='live';main().hidden=ROUTE.page==='live';
+  if(ROUTE.page==='live')return;
+  try{await PAGES[ROUTE.page](ROUTE,()=>my===seq)}catch(e){if(my===seq)main().innerHTML=empty('This page could not be loaded.',esc(e.message||e))}}
+addEventListener('hashchange',()=>{scrollTo(0,0);route()});
+const go=h=>{if(location.hash==='#'+h)route();else location.hash=h};
+
+/* ================= the settings sheet, as the game lays it out ================= */
+function gtSheet(view,o={}){
+  if(!view||!view.length)return'';
+  const num=x=>/^[-+]?[\d.:]+$|^(in|out) [\d.]+$/.test(String(x??''));
+  const box=c=>`<div class="gtbox${c.was!=null?' chg':''}${num(c.value)?'':' txt'}"${c.why?` title="${esc(c.why)}"`:''}>${esc(c.value??'--')}${c.was!=null?`<small>was ${esc(c.was)}</small>`:''}</div>`;
+  const sec=x=>{const pair=x.rows.some(r=>r.cells.length===2)&&x.section!=='Tires';
+    return `<div class="gtsec">${esc(x.section)}</div>`+(pair?`<div class="gtrow"><span></span><span></span><span class="gthd">Front</span><span class="gthd">Rear</span></div>`:'')+
+      x.rows.map(r=>x.section==='Tires'?r.cells.map(c=>`<div class="gtrow tyre"><span class="gthd" style="text-align:right">${c.end==='front'?'Front':'Rear'}</span>${box(c)}</div>`).join(''):
+        `<div class="gtrow${r.cells.length===1?' one':''}"><span>${esc(r.label)}</span><span class="gtu">${esc(r.unit)}</span>${r.cells.map(box).join('')}</div>`).join('')};
+  const rec=o.rec||[],pages=[...new Set(view.map(x=>x.page||1))].sort();
+  const page=n=>`<div class="gtcols${n>pages[0]?' gtpage':''}">${[0,1].map(c=>`<div>${view.filter(x=>(x.page||1)===n&&(x.col||0)===c).map(sec).join('')}</div>`).join('')}</div>`;
+  const figs=[['PP',o.pp],['HP',o.power_hp],['kg',o.weight_kg]].filter(f=>f[1]!=null);
+  return `<div class="gt"><div class="gttitle">${esc(o.title||'Car Settings')}</div>${o.sub?`<div class="gtsub">${esc(o.sub)}</div>`:''}
+    ${figs.length?`<div class="gthead">${figs.map(f=>`<span>${f[0]}<b>${esc(f[1])}</b></span>`).join('')}</div>`:''}
+    ${pages.map(page).join('')}
+    ${rec.length?`<ul class="gtlist">${rec.map(r=>`<li><b>${esc(r.game_setting)}: ${esc(r.now)} → ${esc(r.to)}</b><br>${esc(r.reason)}</li>`).join('')}</ul>`:''}</div>`}
+
+/* ================= charts ================= */
+const CAUSE={brake_early:'braking too early',brake_late:'braking too late',apex_slow:'slow at the apex',throttle_late:'late on the throttle',exit_slow:'slow exit',time:'time lost'};
+function gapBars(host,laps){            // seconds off the session best, one bar per lap
+  const W=560,H=190,m={l:38,r:8,t:10,b:24},d=laps.filter(l=>l.ms>0);if(!d.length){host.innerHTML='';return}
+  const best=Math.min(...d.filter(l=>!l.first_lap).map(l=>l.ms).concat(d.every(l=>l.first_lap)?d.map(l=>l.ms):[]));
+  const gaps=d.map(l=>Math.max(0,(l.ms-best)/1000)),max=Math.max(0.2,...gaps),st=niceStep(max,4),top=Math.ceil(max/st)*st;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Seconds off the best lap, per lap'});
+  const y=v=>m.t+(H-m.t-m.b)*(1-v/top),bw=(W-m.l-m.r)/d.length,w=Math.min(24,bw-2);
+  for(let v=0;v<=top+1e-9;v+=st){el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:'var(--line)'},svg);el('text',{x:m.l-6,y:y(v)+4,'text-anchor':'end'},svg).textContent=v.toFixed(st<1?1:0)}
+  d.forEach((l,i)=>{const x=m.l+bw*i+(bw-w)/2,h=Math.max(1.5,y(0)-y(gaps[i])),r=Math.min(4,h);
+    el('path',{d:`M${x},${y(0)}v${-(h-r)}q0,${-r} ${r},${-r}h${w-2*r}q${r},0 ${r},${r}v${h-r}z`,fill:'var(--s1)',opacity:l.first_lap?.45:1},svg);
+    if(d.length<=24||i%2===0)el('text',{x:x+w/2,y:H-8,'text-anchor':'middle'},svg).textContent=l.lap;
+    const hit=el('rect',{x:m.l+bw*i,y:m.t,width:bw,height:H-m.t-m.b,fill:'transparent'},svg);
+    hit.onmousemove=e=>showTip(e,`Lap ${l.lap}${l.first_lap?' (first lap)':''}\n${l.time}\n${gaps[i]<0.0005?'session best':'+'+gaps[i].toFixed(3)+' s'}\nfuel used ${l.fuel_used}`);hit.onmouseleave=hideTip});
+  host.replaceChildren(svg)}
+function cornerBars(host,corners){      // average seconds lost per corner, ranked
+  const d=corners.filter(c=>c.avg_loss_s>0.005).slice(0,10);
+  if(!d.length){host.innerHTML='<div class="mut small">No corner is losing time against the reference lap.</div>';return}
+  const W=560,row=26,m={l:62,r:56,t:4,b:4},H=m.t+m.b+row*d.length,max=Math.max(...d.map(c=>c.avg_loss_s));
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Average time lost per corner'});
+  d.forEach((c,i)=>{const yy=m.t+row*i,w=Math.max(2,(W-m.l-m.r)*c.avg_loss_s/max),h=14,r=Math.min(4,w);
+    el('text',{x:m.l-8,y:yy+row/2+4,'text-anchor':'end',style:'fill:var(--text2);font-size:12.5px'},svg).textContent='Turn '+c.turn;
+    el('path',{d:`M${m.l},${yy+6}h${w-r}q${r},0 ${r},${r}v${h-2*r}q0,${r} ${-r},${r}h${-(w-r)}z`,fill:'var(--s1)'},svg);
+    el('text',{x:m.l+w+6,y:yy+row/2+4,style:'fill:var(--text2);font-size:12.5px'},svg).textContent=c.avg_loss_s.toFixed(2)+' s';
+    const hit=el('rect',{x:0,y:yy,width:W,height:row,fill:'transparent'},svg);
+    const cause=Object.entries(c.main_causes||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>CAUSE[k]+' ×'+v).join(', ')||'no single cause';
+    hit.onmousemove=e=>showTip(e,`Turn ${c.turn}\navg loss ${c.avg_loss_s.toFixed(3)} s · worst ${c.worst_loss_s.toFixed(3)} s\n${cause}`);hit.onmouseleave=hideTip});
+  host.replaceChildren(svg)}
+function miniMap(points){               // the outline alone, for a card
+  const xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),z0=Math.min(...zs),z1=Math.max(...zs);
+  const W=300,H=150,pad=10,k=Math.min((W-2*pad)/(x1-x0||1),(H-2*pad)/(z1-z0||1));
+  const X=x=>pad+(x-x0)*k+((W-2*pad)-(x1-x0)*k)/2,Y=z=>pad+(z-z0)*k+((H-2*pad)-(z1-z0)*k)/2;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Track outline"><path d="M${points.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join('L')}Z" fill="none" stroke="var(--text2)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="${X(points[0][0])}" cy="${Y(points[0][1])}" r="4" fill="var(--accent)"/></svg>`}
+function trackMap(host,map,corners,big){
+  const P=map.points,xs=P.map(p=>p[0]),zs=P.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),z0=Math.min(...zs),z1=Math.max(...zs);
+  const W=big?760:560,H=big?480:360,pad=34,k=Math.min((W-2*pad)/(x1-x0||1),(H-2*pad)/(z1-z0||1));
+  const X=x=>pad+(x-x0)*k+((W-2*pad)-(x1-x0)*k)/2,Y=z=>pad+(z-z0)*k+((H-2*pad)-(z1-z0)*k)/2;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Track outline with corner numbers'});
+  const d='M'+P.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join('L')+'Z';
+  el('path',{d,fill:'none',stroke:'#2a3242','stroke-width':big?14:10,'stroke-linejoin':'round'},svg);
+  el('path',{d,fill:'none',stroke:'var(--text2)','stroke-width':big?3:2.5,'stroke-linejoin':'round'},svg);
+  el('circle',{cx:X(P[0][0]),cy:Y(P[0][1]),r:6,fill:'var(--accent)',stroke:'var(--surface)','stroke-width':2},svg);
+  const cx=(x0+x1)/2,cz=(z0+z1)/2,loss=Object.fromEntries((corners||[]).map(c=>[c.turn,c]));
+  const worst=new Set((corners||[]).filter(c=>c.avg_loss_s>0.05).slice(0,3).map(c=>c.turn));
+  for(const c of map.corners){const dx=c.x-cx,dz=c.z-cz,n=Math.hypot(dx,dz)||1,px=X(c.x)+dx/n*20,py=Y(c.z)+dz/n*20,hot=worst.has(c.n);
+    el('circle',{cx:px,cy:py,r:11,fill:hot?'var(--s2)':'var(--surface2)',stroke:hot?'var(--surface)':'var(--line)','stroke-width':hot?2:1},svg);
+    el('text',{x:px,y:py+4,'text-anchor':'middle',style:`fill:${hot?'#fff':'var(--text2)'};font-size:11px;font-weight:600`},svg).textContent=c.n;
+    const hit=el('circle',{cx:px,cy:py,r:15,fill:'transparent'},svg),L=loss[c.n];
+    hit.onmousemove=e=>showTip(e,`Turn ${c.n}`+(L?`\navg loss ${L.avg_loss_s.toFixed(3)} s\napex ${L.reference.min_speed??'–'} km/h on the reference lap`+(L.reference.brake_s?`\nbrake at ${Math.round(L.reference.brake_s)} m`:''):''));hit.onmouseleave=hideTip}
+  host.replaceChildren(svg)}
+function traceChart(host,ref,lap,corners){   // speed by distance (two laps) + running gap, shared crosshair
+  const W=1100,m={l:44,r:14,t:18,b:22},H1=250,H2=130,D=ref.dist,n=Math.min(D.length,lap.dist.length),xmax=D[n-1];
+  const X=d=>m.l+(W-m.l-m.r)*d/xmax;
+  const smax=Math.ceil(Math.max(...ref.speed,...lap.speed)/50)*50,Y1=v=>m.t+(H1-m.t-m.b)*(1-v/smax);
+  const gap=D.slice(0,n).map((_,i)=>lap.t[i]-ref.t[i]),gmax=Math.max(0.1,...gap.map(Math.abs)),gst=niceStep(gmax*2,4),gtop=Math.ceil(gmax/gst)*gst;
+  const Y2=v=>m.t+(H2-m.t-m.b)*(1-(v+gtop)/(2*gtop));
+  const wrap=document.createElement('div');
+  wrap.innerHTML=`<div class="legend"><span><i style="background:var(--s1)"></i>Reference lap ${esc(ref.time)}</span><span><i style="background:var(--s2)"></i>Lap ${lap.lap} · ${esc(lap.time)}</span></div>`;
+  const a=el('svg',{viewBox:`0 0 ${W} ${H1}`,role:'img','aria-label':'Speed along the lap for two laps'}),b=el('svg',{viewBox:`0 0 ${W} ${H2}`,role:'img','aria-label':'Running time gap to the reference lap'});
+  for(let v=0;v<=smax;v+=50){el('line',{x1:m.l,x2:W-m.r,y1:Y1(v),y2:Y1(v),stroke:'var(--line)'},a);el('text',{x:m.l-6,y:Y1(v)+4,'text-anchor':'end'},a).textContent=v}
+  el('text',{x:m.l,y:10},a).textContent='km/h';
+  for(const c of corners){el('line',{x1:X(c.apex),x2:X(c.apex),y1:m.t,y2:H1-m.b,stroke:'var(--line)'},a);el('text',{x:X(c.apex),y:H1-6,'text-anchor':'middle'},a).textContent='T'+c.n;
+    el('line',{x1:X(c.apex),x2:X(c.apex),y1:m.t,y2:H2-m.b,stroke:'var(--line)'},b)}
+  const line=(svg,ys,Y,col)=>el('path',{d:'M'+ys.slice(0,n).map((v,i)=>X(D[i]).toFixed(1)+','+Y(v).toFixed(1)).join('L'),fill:'none',stroke:col,'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'},svg);
+  line(a,ref.speed,Y1,'var(--s1)');line(a,lap.speed,Y1,'var(--s2)');
+  for(let v=-gtop;v<=gtop+1e-9;v+=gst){el('line',{x1:m.l,x2:W-m.r,y1:Y2(v),y2:Y2(v),stroke:Math.abs(v)<1e-9?'var(--mut)':'var(--line)'},b);el('text',{x:m.l-6,y:Y2(v)+4,'text-anchor':'end'},b).textContent=sgn(v,gst<1?1:0)}
+  el('text',{x:m.l,y:10},b).textContent='seconds behind (+) or ahead (−) of the reference';
+  line(b,gap,Y2,'var(--s2)');
+  const ca=el('line',{y1:m.t,y2:H1-m.b,stroke:'var(--text2)',visibility:'hidden'},a),cb=el('line',{y1:m.t,y2:H2-m.b,stroke:'var(--text2)',visibility:'hidden'},b);
+  const d1=el('circle',{r:4.5,fill:'var(--s1)',stroke:'var(--surface)','stroke-width':2,visibility:'hidden'},a),d2=el('circle',{r:4.5,fill:'var(--s2)',stroke:'var(--surface)','stroke-width':2,visibility:'hidden'},a);
+  const move=svg=>e=>{const r=svg.getBoundingClientRect(),d=Math.max(0,Math.min(xmax,((e.clientX-r.left)/r.width*W-m.l)/(W-m.l-m.r)*xmax)),i=Math.min(n-1,Math.round(d/(D[1]-D[0])));
+    for(const c of [ca,cb]){c.setAttribute('x1',X(D[i]));c.setAttribute('x2',X(D[i]));c.setAttribute('visibility','visible')}
+    d1.setAttribute('cx',X(D[i]));d1.setAttribute('cy',Y1(ref.speed[i]));d2.setAttribute('cx',X(D[i]));d2.setAttribute('cy',Y1(lap.speed[i]));d1.setAttribute('visibility','visible');d2.setAttribute('visibility','visible');
+    showTip(e,`${Math.round(D[i])} m\nReference ${ref.speed[i].toFixed(0)} km/h · gear ${ref.gear[i]}\nLap ${lap.lap} ${lap.speed[i].toFixed(0)} km/h · gear ${lap.gear[i]}\nbrake ${lap.brk[i].toFixed(0)}% (ref ${ref.brk[i].toFixed(0)}%) · throttle ${lap.thr[i].toFixed(0)}% (ref ${ref.thr[i].toFixed(0)}%)\ngap ${sgn(gap[i],3)} s`)};
+  const leave=()=>{hideTip();for(const c of [ca,cb,d1,d2])c.setAttribute('visibility','hidden')};
+  for(const s of [a,b]){const hit=el('rect',{x:m.l,y:0,width:W-m.l-m.r,height:s===a?H1:H2,fill:'transparent'},s);hit.onmousemove=move(s);hit.onmouseleave=leave}
+  wrap.append(a,b);host.replaceChildren(wrap)}
+function dayBars(host,days){            // laps per day
+  if(!days.length){host.innerHTML='';return}
+  const W=560,H=150,m={l:30,r:6,t:8,b:22},max=Math.max(...days.map(d=>d.laps)),st=niceStep(max,3)||1,top=Math.max(st,Math.ceil(max/st)*st);
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Laps per day'}),y=v=>m.t+(H-m.t-m.b)*(1-v/top),bw=(W-m.l-m.r)/Math.max(days.length,7),w=Math.min(30,bw-4);
+  for(let v=0;v<=top+1e-9;v+=st){el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:'var(--line)'},svg);el('text',{x:m.l-6,y:y(v)+4,'text-anchor':'end'},svg).textContent=v}
+  days.forEach((d,i)=>{const x=m.l+bw*i+(bw-w)/2,h=Math.max(2,y(0)-y(d.laps)),r=Math.min(4,h);
+    el('path',{d:`M${x},${y(0)}v${-(h-r)}q0,${-r} ${r},${-r}h${w-2*r}q${r},0 ${r},${r}v${h-r}z`,fill:'var(--s1)'},svg);
+    if(days.length<=12||i%Math.ceil(days.length/10)===0)el('text',{x:x+w/2,y:H-6,'text-anchor':'middle'},svg).textContent=d.day.slice(8)+'/'+d.day.slice(5,7);
+    const hit=el('rect',{x:m.l+bw*i,y:m.t,width:bw,height:H-m.t-m.b,fill:'transparent'},svg);
+    hit.onmousemove=e=>showTip(e,`${dayName(d.day)}\n${plural(d.laps,'lap')} · ${dur(Math.round(d.ms/60000))}`);hit.onmouseleave=hideTip});
+  host.replaceChildren(svg)}
+const rank=(rows,href,label,value,share)=>{const max=Math.max(...rows.map(share),1e-9);
+  return `<div class="rank">${rows.map(r=>`<a href="${href(r)}"><span class="t">${esc(label(r))}</span><span class="n">${value(r)}</span><span class="track"><i style="width:${Math.max(2,share(r)/max*100).toFixed(1)}%"></i></span></a>`).join('')}</div>`};
+const sessionRows=(list,o={})=>list.map(s=>`<a class="srow" href="#sessions/${s.id}"><span class="m">${esc(s.started.slice(11))}</span>
+  <span class="t">${esc(o.noCar?s.track||'unknown track':s.car)}</span><span class="d hide">${esc(o.noCar?'':o.noTrack?'':s.track||'unknown track')}</span>
+  <span class="m hide">${plural(s.laps,'lap')}</span><span class="b">${esc(s.best)}${s.record?' <span class="pill good" style="margin:0 0 0 4px" title="The fastest lap in this car on this track">best</span>':''}</span></a>`).join('');
+function sessionList(list,o){if(!list.length)return'';let h='',day=null,open=false;
+  for(const s of list){if(s.day!==day){if(open)h+='</div>';day=s.day;h+=`<div class="day">${esc(dayName(day))}</div><div class="card list">`;open=true}h+=sessionRows([s],o)}
+  return h+'</div>'}
+const changesList=n=>`<table>${n.changes.map(c=>`<tr><td><b>${esc(c.setting)}</b><div class="small mut">${esc(c.reason||'')}</div></td><td class="r" style="white-space:nowrap">${esc(c.now)} → <b style="color:var(--warn)">${esc(c.to)}</b></td></tr>`).join('')}</table>`;
+
+/* ================= home ================= */
+async function pageHome(r,alive){const d=await get('/api/overview');if(!alive())return;const t=d.totals;
+  if(!t.laps){main().innerHTML=head('Welcome','No laps recorded yet')+empty('Drive a few laps and this page fills in.','Open <a href="#live">Live</a> to see the telemetry arrive, or <a href="#settings">Settings</a> to enter the console address.');return}
+  const top=d.cars[0],n=d.next;
+  let h=head('Home',`Driving since ${esc(t.since)}`);
+  h+=`<div class="grid tiles">${tile('Laps',t.laps,plural(t.sessions,'session'))}${tile('Distance',km(t.km)+'<small> km</small>','on known tracks')}${tile('Time on track',dur(t.minutes),'timed laps only')}${tile('Cars driven',t.cars,top?'most: '+esc(top.name):'')}${tile('Tracks',t.tracks,d.tracks[0]?'most: '+esc(d.tracks[0].name):'')}</div>`;
+  h+=`<div class="grid split gap"><div class="card"><h2>What to change next</h2>`;
+  if(n&&n.ready&&n.changes.length)h+=`<div class="sub"><a href="#cars/${n.car_code}">${esc(n.car)}</a> · from ${plural(n.based_on.laps,'lap')} at ${esc(n.based_on.track)}, ${esc(n.based_on.started)}</div>${changesList(n)}<div style="margin-top:12px"><a class="btn primary" href="#cars/${n.car_code}/suggested">Open the suggested tune</a></div>`;
+  else if(n&&n.ready)h+=`<div class="sub"><a href="#cars/${n.car_code}">${esc(n.car)}</a> · from ${plural(n.based_on.laps,'lap')} at ${esc(n.based_on.track)}</div><p style="margin:0">${n.problems.length?esc(n.problems.join('. '))+'.':'Nothing on the car stands out. The time is in the driving.'}${n.sheet_on_file?'':' File the car\'s settings sheet to get changes with numbers.'}</p><div style="margin-top:12px"><a class="btn" href="#cars/${n.car_code}/suggested">Open the car</a></div>`;
+  else h+=`<div class="sub">${n?`<a href="#cars/${n.car_code}">${esc(n.car)}</a>`:''}</div><p class="mut" style="margin:0">${esc(n&&n.note||'Drive three timed laps in one session.')}</p>`;
+  h+=`</div><div class="card"><h2>Most driven cars</h2><div class="sub">By laps</div>${rank(d.cars,c=>'#cars/'+c.code,c=>c.name,c=>plural(c.laps,'lap')+' · '+km(c.km)+' km',c=>c.laps)}</div></div>`;
+  h+=`<div class="grid split gap"><div><div class="pagehead" style="margin:8px 0 0"><h2 style="margin:0;font-size:17px">Latest sessions</h2><span class="spacer"></span><a href="#sessions" class="small">All sessions</a></div>${sessionList(d.recent)}</div>
+    <div class="grid" style="align-content:start"><div class="card"><h2>Most driven tracks</h2><div class="sub">By laps</div>${rank(d.tracks,x=>'#tracks/'+x.id,x=>x.name,x=>plural(x.laps,'lap')+' · '+km(x.km)+' km',x=>x.laps)}</div>
+    <div class="card"><h2>Laps per day</h2><div class="sub">The last ${d.days.length} driving ${d.days.length===1?'day':'days'}</div><div id="hDays"></div></div></div></div>`;
+  h+=`<div class="card gap"><h2>Best laps</h2><div class="sub">Your fastest lap in each car on each track, newest first</div><div class="scroll"><table><tr><th>Track</th><th>Car</th><th>Best</th><th>Set on</th></tr>
+    ${d.records.map(x=>`<tr class="row" onclick="go('sessions/${x.session}')"><td><a href="#tracks/${x.track_id}" onclick="event.stopPropagation()">${esc(x.track)}</a></td><td><a href="#cars/${x.car_code}" onclick="event.stopPropagation()">${esc(x.car)}</a></td><td><b>${esc(x.best)}</b></td><td class="mut">${esc(x.set_on||'')}</td></tr>`).join('')}</table></div></div>`;
+  main().innerHTML=h;dayBars($('hDays'),d.days)}
+
+/* ================= cars ================= */
+let carSort='last';
+async function pageCars(r,alive){if(r.args[0])return pageCar(r,alive);
+  main().innerHTML=head('Cars','','',`<a class="btn" href="#screenshots">File settings from a screenshot</a>`)+
+    `<div class="toolbar"><input type="search" id="carQ" class="grow" placeholder="Search every car in the game: 911 gt3, supra, gr.3 …" value="${esc(r.q.get('q')||'')}" autocomplete="off">
+     <select id="carSort" aria-label="Sort"><option value="last">Last driven</option><option value="laps">Most laps</option><option value="name">Name</option></select></div><div id="carList"></div>`;
+  $('carSort').value=carSort;let timer,n=0;
+  const load=async()=>{const my=++n,q=$('carQ').value.trim(),d=await get('/api/cars?q='+encodeURIComponent(q));if(!alive()||my!==n||!$('carList'))return;
+    let list=d.cars.slice();
+    if(carSort==='laps')list.sort((a,b)=>b.laps-a.laps);else if(carSort==='name')list.sort((a,b)=>a.name.localeCompare(b.name));
+    if(!list.length){$('carList').innerHTML=q?empty('No car matches “'+esc(q)+'”.','Try fewer words. The search looks at the names of all '+d.total_in_game+' cars in the game.'):empty('No cars yet.','A car appears here after its first recorded lap. Search above to look up any of the '+d.total_in_game+' cars in the game.');return}
+    $('carList').innerHTML=(q?`<div class="small mut" style="margin-bottom:10px">${plural(list.length,'car')} of ${d.total_in_game} in the game</div>`:'')+`<div class="grid cars">${list.map(c=>`<a class="card link carcard" href="#cars/${c.code}">
+      <div class="name">${esc(c.name)}</div><div>${carPills(c)}</div>
+      ${c.laps?`<div class="stats"><div>${c.laps}<span>laps</span></div><div>${km(c.km)}<span>km</span></div><div>${c.sessions}<span>sessions</span></div><div>${c.tracks}<span>tracks</span></div></div>`:''}
+      <div class="foot">${c.laps?'Last driven '+esc(c.last_driven.slice(0,10)):'Not driven yet'}${c.sheet_on_file?' · <span style="color:var(--s1)">settings on file</span>':''}${c.library_tunes?' · '+plural(c.library_tunes,'library tune'):''}</div></a>`).join('')}</div>`};
+  $('carQ').oninput=()=>{clearTimeout(timer);timer=setTimeout(load,180)};$('carSort').onchange=()=>{carSort=$('carSort').value;load()};
+  await load()}
+
+async function pageCar(r,alive){const code=+r.args[0],sub=r.args[1]||'overview',sid=r.q.get('session');
+  const c=await get('/api/car?code='+code+(sid?'&session='+sid:''));if(!alive())return;
+  const sg=c.suggested||{},adv=sg.advice,nrec=adv&&adv.ready?(adv.recommended||[]).length:0;
+  const tabs=[['overview','Overview'],['settings','Settings'+(c.sheet?'':' <span class="count">none</span>')],['suggested','Suggested tune'+(nrec?` <span class="count">${plural(nrec,'change')}</span>`:'')],['library',`Library tunes <span class="count">${c.library.length}</span>`],['sessions',`Sessions <span class="count">${c.sessions.length}</span>`]];
+  let h=`<div class="crumb"><a href="#cars">Cars</a> / ${esc(c.name)}</div><div class="hero${c.picture?' pic':''}">${c.picture?`<img src="${c.picture}" alt="">`:''}<div><h1>${esc(c.name)}</h1><div>${carPills(c)}${c.sheet&&c.sheet.pp?`<span class="pill blue">PP ${esc(c.sheet.pp)} as tuned</span>`:''}</div></div></div>`;
+  h+=`<div class="seg">${tabs.map(([k,t])=>`<a href="#cars/${code}${k==='overview'?'':'/'+k}" aria-current="${k===sub}">${t}</a>`).join('')}</div>`;
+  if(sub==='overview'){
+    h+=`<div class="grid tiles">${tile('Laps',c.laps,plural(c.sessions.length,'session'))}${tile('Distance',km(c.km)+'<small> km</small>',plural(c.tracks,'track'))}${tile('Time on track',dur(c.minutes),c.first_driven?'since '+esc(c.first_driven.slice(0,10)):'')}${tile('Last driven',c.last_driven?esc(c.last_driven.slice(0,10)):'–',c.last_driven?esc(c.last_driven.slice(11)):'not driven yet')}</div>`;
+    h+=`<div class="grid split gap"><div class="card"><h2>Best laps</h2><div class="sub">Your fastest lap in this car on each track</div>${c.bests.length?`<div class="scroll"><table><tr><th>Track</th><th>Best</th><th>Laps</th><th>Set on</th></tr>${c.bests.map(b=>`<tr class="row" onclick="go('sessions/${b.session}')"><td><a href="#tracks/${b.track_id}" onclick="event.stopPropagation()">${esc(b.track)}</a></td><td><b>${esc(b.best)}</b></td><td>${b.laps}</td><td class="mut">${esc(b.set_on||'')}</td></tr>`).join('')}</table></div>`:'<div class="mut small">No timed laps on a known track yet.</div>'}</div>
+      <div class="card"><h2>Next step</h2>${nrec?`<div class="sub">From ${plural(sg.based_on.laps,'lap')} at ${esc(sg.based_on.track)}</div>${changesList({changes:adv.recommended.map(x=>({setting:x.game_setting,now:x.now,to:x.to,reason:x.reason}))})}<div style="margin-top:12px"><a class="btn primary" href="#cars/${code}/suggested">Open the suggested tune</a></div>`:
+        !c.sheet?`<p class="mut" style="margin:6px 0 12px">No settings sheet on file for this car. Take a PS5 screenshot of the Car Settings screen and the copilot files it.</p><a class="btn" href="#screenshots">File settings from a screenshot</a>`:
+        adv&&adv.ready?'<p class="mut" style="margin:6px 0 0">Nothing to change on the car from the latest laps.</p>':`<p class="mut" style="margin:6px 0 0">${esc(sg.note||(adv&&adv.notes||[])[0]||'Drive three timed laps in one session.')}</p>`}</div></div>`;
+    const t=c.telemetry||{},sp=c.spec||{};
+    h+=`<div class="grid two gap"><div class="card"><h2>As it leaves the dealer</h2><div class="sub">From the game's car list</div><table>
+      ${[['Maker',sp.maker],['Class',sp.car_class],['Drivetrain',sp.drivetrain],['Aspiration',sp.aspiration],['Power',sp.power_hp&&Math.round(sp.power_hp)+' HP'],['Weight',sp.weight_kg&&Math.round(sp.weight_kg)+' kg'],['PP, stock',sp.pp_stock&&sp.pp_stock.toFixed(2)]].filter(x=>x[1]).map(x=>`<tr><td class="mut">${x[0]}</td><td>${esc(x[1])}</td></tr>`).join('')||'<tr><td class="mut">This car is not in the official car list.</td></tr>'}</table></div>
+      <div class="card"><h2>Read from the car</h2><div class="sub">What the telemetry reports while driving</div>${(t.gear_ratios||[]).filter(Boolean).length?`<h3 style="margin-top:0">Gear ratios</h3>${t.gear_ratios.filter(Boolean).map((g,i)=>`<span class="pill">${i+1}: ${g}</span>`).join('')}<div class="small mut" style="margin-top:6px">Shift lights ${t.rpm_alert?t.rpm_alert[0]+' to '+t.rpm_alert[1]+' rpm':'–'}${t.fuel_cap?' · fuel tank '+t.fuel_cap:''}</div>`:'<div class="mut small">Nothing yet. Drive the car once.</div>'}</div></div>`;
+    if(c.sessions.length)h+=`<div class="pagehead" style="margin:20px 0 0"><h2 style="margin:0;font-size:17px">Latest sessions</h2><span class="spacer"></span><a class="small" href="#cars/${code}/sessions">All ${c.sessions.length}</a></div>${sessionList(c.sessions.slice(0,4),{noCar:true})}`;
+  }
+  if(sub==='settings'){const s=c.sheet;
+    if(!s)h+=empty('No settings sheet on file for this car.','Open the Car Settings screen in the game, press the Create button for a screenshot, then <a href="#screenshots">read it on the Screenshots page</a> or say “Copilot, take a screenshot”.');
+    else{h+=gtSheet(s.view,{title:'Car Settings',sub:`As saved ${s.saved}${s.library_tune?' · the “'+s.library_tune+'” library tune':''}${s.note?' · '+s.note:''}`,pp:s.pp,power_hp:s.power_hp,weight_kg:s.weight_kg});
+      if(s.check&&s.check.length)h+=`<div class="card banner gap"><b>Worth a second look:</b> ${s.check.map(esc).join('; ')}</div>`;
+      h+=`<div class="grid two gap"><div class="card"><h2>Every sheet saved for this car</h2><div class="sub">Newest first, with what changed from the one before</div><table>${c.history.map((x,i)=>`<tr><td style="white-space:nowrap" class="mut">${esc(x.saved)}${i===0?'<div><span class="pill good">on the car</span></div>':''}</td><td>${x.changes==null?'First sheet on file':x.changes.length?x.changes.map(y=>`${esc(y.setting)}: ${esc(Array.isArray(y.before)?y.before.join(', '):y.before)} → <b>${esc(Array.isArray(y.after)?y.after.join(', '):y.after)}</b>`).join('<br>'):'No change'}${x.note?`<div class="small mut">${esc(x.note)}</div>`:''}</td></tr>`).join('')}</table></div>
+        <div class="card"><h2>What your changes did</h2><div class="sub">Laps before and after each change, on tracks driven with both</div>${c.experiments.some(e=>e.outcome)?`<table>${c.experiments.filter(e=>e.outcome).map(e=>`<tr><td>${e.changed.map(y=>`${esc(y.setting)}: ${esc(y.before)} → <b>${esc(y.after)}</b>`).join('<br>')}${e.clean_test?'<div><span class="pill blue">one setting changed</span></div>':''}</td><td>${e.outcome.map(o=>`${esc(o.track)}: <b style="color:${o.best_change_s<0?'var(--good)':'var(--crit)'}">${sgn(o.best_change_s,3)} s</b>`).join('<br>')}</td></tr>`).join('')}</table>`:'<div class="mut small">Nothing to compare yet. Change one setting, save the new sheet, and drive the same track again.</div>'}
+        ${c.screenshots?`<div style="margin-top:12px"><a class="btn small" href="#screenshots?car=${code}">${plural(c.screenshots,'screenshot')} of this car</a></div>`:''}</div></div>`}}
+  if(sub==='suggested'){
+    if(!adv)h+=empty('No suggested tune yet.',esc(sg.note||''));
+    else{h+=`<div class="toolbar"><span class="small mut">Worked out from</span><select id="sgSel" aria-label="Session">${sg.choices.map(x=>`<option value="${x.session}" ${x.session===sg.based_on.session?'selected':''}>${esc(x.started)} · ${esc(x.track)} · ${plural(x.laps,'lap')}</option>`).join('')}</select><a class="btn small" href="#sessions/${sg.based_on.session}">Open that session</a></div>`;
+      if(sg.sheet_newer)h+=`<div class="card banner">The settings on file were saved after these laps. Drive the car again and this page works from the new sheet.</div>`;
+      if(!adv.ready)h+=empty('Not enough to go on yet.',esc((adv.notes||[]).join(' ')));
+      else{const rec=adv.recommended||[];
+        if(adv.sheet_view)h+=gtSheet(adv.sheet_view,{title:'Suggested Settings',sub:rec.length?`Your sheet with ${plural(rec.length,'change')} marked in yellow. Everything else stays as it is.`:'Your sheet as saved. Nothing to change.',rec});
+        else h+=`<div class="card banner">No settings sheet on file for this car, so the changes below have directions but no numbers. <a href="#screenshots">File the sheet from a screenshot.</a></div>`;
+        h+=`<div class="card gap"><h2>Why: what the car did</h2><div class="sub">Worked out from how the car behaved over ${adv.laps} timed laps, with the alternatives for each problem. Change one thing at a time.</div>
+          ${(adv.items||[]).map((it,i)=>`<h3 style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15px;margin-top:${i?20:6}px">${i+1}. ${esc(it.problem)}</h3><div class="small mut">${it.evidence.map(esc).join(' · ')}</div>
+            <div class="scroll"><table><tr><th>Change</th><th>Now</th><th>Try</th><th>Why</th></tr>${it.fixes.map(f=>`<tr><td>${esc(f.game_setting||f.setting)}${f.needs_part?'<div class="small mut">needs: '+esc(f.needs_part)+'</div>':''}</td><td>${esc(f.now??'–')}</td><td>${f.to!=null?'<b>'+esc(f.to)+'</b>':esc(f.direction)+' by '+esc(f.step)}</td><td class="mut">${esc(f.why)}</td></tr>`).join('')}</table></div>
+            ${it.suspect_settings.length?`<div class="small" style="margin-top:6px"><b>On your sheet now and a likely cause:</b> ${it.suspect_settings.map(x=>esc(x.game_setting||x.setting)+' = '+esc(x.now)+' ('+esc(x.why)+')').join('; ')}</div>`:''}`).join('')||'<p class="mut" style="margin:0">Nothing on the car stands out. The time is in the driving.</p>'}
+          ${(adv.parts||[]).length?`<h3 style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15px;margin-top:20px">Parts to fit first</h3><table><tr><th>Part</th><th>Needed for</th></tr>${adv.parts.map(p=>`<tr><td><b>${esc(p.part)}</b></td><td class="mut">${esc(p.unlocks)} (${esc(p.for_problem)})</td></tr>`).join('')}</table>`:''}
+          ${(adv.notes||[]).map(x=>`<p class="small mut" style="margin:10px 0 0">${esc(x)}</p>`).join('')}</div>`}}}
+  if(sub==='library'){const STATUS={proven:['good','Proven'],'did not suit':['bad','Did not suit'],driven:['blue','Driven'],untested:['','Untested']};
+    const link=u=>{try{const x=new URL(u);return /^https?:$/.test(x.protocol)?`<a href="${esc(x.href)}" target="_blank" rel="noopener noreferrer">${esc(x.hostname.replace(/^www\./,''))}</a>`:''}catch(e){return''}};
+    const val=v=>Array.isArray(v)?(v.length?v.map(esc).join(', '):'–'):esc(v);
+    h+=c.library.length?c.library.map(t=>{const [cls,lab]=STATUS[t.status]||STATUS.untested,d=t.differs_from_your_sheet||[];
+      const facts=[t.pp!=null?'PP '+esc(t.pp):'',esc(t.tyres||''),esc(t.purpose||''),esc(t.track||''),t.game_version?'game '+esc(t.game_version):'',t.published?'published '+esc(t.published):''].filter(Boolean);
+      return `<div class="card" style="margin-bottom:12px"><h2 style="font-size:17px">${esc(t.title)} <span class="pill ${cls}" style="margin-left:6px;vertical-align:2px">${lab}</span>${t.on_car?'<span class="pill good" style="vertical-align:2px">on the car</span>':''}</h2>
+      <div class="sub">${[t.author?'by '+esc(t.author):'',link(t.url),'filed '+esc(t.added)].filter(Boolean).join(' · ')}</div><div>${facts.map(f=>`<span class="pill">${f}</span>`).join('')}</div>
+      ${t.notes?`<p class="small" style="margin:8px 0 0">${esc(t.notes)}</p>`:''}${t.verdict_note?`<p class="small" style="margin:6px 0 0"><b>Your verdict:</b> ${esc(t.verdict_note)}</p>`:''}
+      <div class="grid two" style="margin-top:6px"><div><h3>Your laps on this tune</h3>${t.results.length?'<table><tr><th>Track</th><th>Best</th><th>Laps</th></tr>'+t.results.map(x=>`<tr><td>${esc(x.track)}</td><td><b>${esc(x.best)}</b></td><td>${x.laps}</td></tr>`).join('')+'</table>':'<div class="mut small">Not driven yet.</div>'}</div>
+        <div><h3>Against the settings on your car</h3>${!c.sheet?'<div class="mut small">No sheet on file for this car.</div>':!t.settings_compared?'<div class="mut small">Nothing in common to compare.</div>':!d.length?`<div class="small">Same on all ${t.settings_compared} settings compared.</div>`:'<div class="scroll"><table><tr><th>Setting</th><th>Yours</th><th>This tune</th></tr>'+d.map(x=>`<tr><td>${esc(x.setting)}</td><td>${val(x.mine)}</td><td><b>${val(x.theirs)}</b></td></tr>`).join('')+'</table></div>'}</div></div>
+      <details style="margin-top:12px"><summary>Show the whole sheet</summary><div style="margin-top:10px">${gtSheet(t.sheet_view,{title:t.title,sub:t.author?'by '+t.author:''})}</div></details></div>`}).join(''):
+      empty('No library tunes on file for this car.','Known-good tunes from other drivers are filed through the agent or the command line (<code>gt7copilot lib-add</code>), each with where it came from. They appear here with your own laps on them.')}
+  if(sub==='sessions')h+=c.sessions.length?sessionList(c.sessions,{noCar:true}):empty('No sessions in this car yet.','');
+  main().innerHTML=h;
+  if($('sgSel'))$('sgSel').onchange=()=>go(`cars/${code}/suggested?session=${$('sgSel').value}`)}
+
+/* ================= tracks ================= */
+async function pageTracks(r,alive){if(r.args[0])return pageTrack(r,alive);
+  const list=await get('/api/tracks');if(!alive())return;
+  main().innerHTML=head('Tracks',list.length?plural(list.length,'track')+' driven':'')+(list.length?`<div class="grid tracks">${list.map(t=>`<a class="card link trackcard" href="#tracks/${t.id}"><div class="mini">${miniMap(t.map.points)}</div>
+    <div class="name">${esc(t.name)}${t.named?'':' <span class="pill warn" style="vertical-align:2px">not named yet</span>'}</div>
+    <div class="small mut">${(t.length_m/1000).toFixed(2)} km · ${t.corners} corners · ${plural(t.laps,'lap')} in ${plural(t.cars.length,'car')}</div>
+    ${t.cars[0]?`<div style="margin-top:10px;display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.cars[0].name)}</span><b class="num" style="font-size:18px">${esc(t.cars[0].best)}</b></div>`:''}</a>`).join('')}</div>`:
+    empty('No tracks yet.','A track is recognised from its shape after the first full lap, and appears here.'))}
+async function pageTrack(r,alive){const id=+r.args[0],t=await get('/api/track?id='+id);if(!alive())return;
+  if(t.error){main().innerHTML=empty('No such track.','');return}
+  const rec=t.recommended,admin=await isAdmin();if(!alive())return;
+  let h=`<div class="crumb"><a href="#tracks">Tracks</a> / ${esc(t.name)}</div>`+head(esc(t.name),`${(t.length_m/1000).toFixed(2)} km · ${t.corners} corners`,'',`<button class="btn small" id="trName">${t.named?'Rename':'Name this track'}</button>`);
+  h+=`<div class="grid tiles">${tile('Best lap',rec?esc(rec.best):'–',rec?esc(rec.car):'')}${tile('Laps',t.laps,plural(t.sessions.length,'session'))}${tile('Distance',km(t.km)+'<small> km</small>',dur(t.minutes)+' on track')}${tile('Cars driven here',t.cars.length,t.last_driven?'last '+esc(t.last_driven.slice(0,10)):'')}</div>`;
+  h+=`<div class="grid split gap"><div class="card"><h2>Track map</h2><div class="sub">Red dot is the start line${rec&&rec.corners.length?' · orange corners cost the most time in the '+esc(rec.car):''}</div><div id="tMap"></div></div><div class="grid" style="align-content:start">`;
+  if(rec){h+=`<div class="card"><h2>Your best car here</h2><div class="sub">${rec.cars_compared>1?'The fastest of the '+rec.cars_compared+' cars you have driven here':'The only car you have driven here so far'}</div>
+      <a href="#cars/${rec.car_code}" style="font-size:19px;font-weight:650;color:var(--text)">${esc(rec.car)}</a><div class="num" style="font-size:30px;font-weight:650;line-height:1.2">${esc(rec.best)}</div><div class="small mut">set on ${esc(rec.set_on||'')}${rec.ideal_lap?' · best corners added up: '+esc(rec.ideal_lap):''}</div>
+      <h3>Tune that set it</h3>${rec.tune?`<div>${esc(rec.tune.title)}${rec.tune.author?' <span class="mut">by '+esc(rec.tune.author)+'</span>':''}${rec.tune.saved?' <span class="mut">saved '+esc(rec.tune.saved)+'</span>':''}</div>`:`<div class="mut small">${rec.sheet_on_file?'Set before the settings sheet now on file was saved.':'No settings sheet was on file for the car.'}</div>`}
+      <div style="margin-top:12px"><a class="btn small" href="#cars/${rec.car_code}/settings">See the car's settings</a></div></div>`;
+    h+=`<div class="card"><h2>Suggested changes for this track</h2>${rec.ready&&rec.changes.length?`<div class="sub">From ${plural(rec.based_on.laps,'lap')} here on ${esc(rec.based_on.started)}</div>${changesList(rec)}<div style="margin-top:12px"><a class="btn primary" href="#cars/${rec.car_code}/suggested?session=${rec.based_on.session}">Open the suggested tune</a></div>`:
+      rec.ready?`<p class="mut" style="margin:6px 0 0">${rec.problems.length?esc(rec.problems.join('. '))+'.':'Nothing to change on the car from the laps here.'}</p>`:'<p class="mut" style="margin:6px 0 0">Drive three timed laps here in one session.</p>'}</div>`}
+  h+=`</div></div>`;
+  h+=`<div class="grid split gap"><div class="card"><h2>Your cars on this track</h2><div class="sub">Ranked by best lap</div><div class="scroll"><table><tr><th>#</th><th>Car</th><th>Best</th><th>Gap</th><th>Laps</th><th>Tune</th></tr>${t.cars.map((c,i)=>`<tr class="row" onclick="go('cars/${c.code}')"><td class="mut">${i+1}</td><td><b>${esc(c.name)}</b><div class="small mut">${[c.car_class,c.drivetrain].filter(Boolean).map(esc).join(' · ')}</div></td><td><b>${esc(c.best)}</b></td><td class="mut">${i?'+'+c.gap_s.toFixed(3):''}</td><td>${c.laps}</td><td class="small mut">${c.tune?esc(c.tune.title):'–'}</td></tr>`).join('')}</table></div></div>
+    <div class="card"><h2>Corners</h2><div class="sub">${rec&&rec.corners.length?'Reference values from the best lap in the '+esc(rec.car)+', and the average time lost':'Drive three timed laps for corner figures'}</div><div class="scroll"><table id="tCorners"></table></div></div></div>`;
+  if(t.events.length)h+=`<div class="card gap"><h2>Events seen here</h2><div class="sub">Read from screenshots of the event screen</div><table>${t.events.map(e=>`<tr><td class="mut" style="white-space:nowrap">${esc(e.seen)}</td><td><b>${esc(e.name||'Event')}</b></td><td class="mut">${[e.laps&&e.laps+' laps',e.cars&&e.cars+' cars',e.fuel_rate&&'fuel ×'+e.fuel_rate,e.tyre_wear_rate&&'tyre wear ×'+e.tyre_wear_rate].filter(Boolean).map(esc).join(' · ')}</td></tr>`).join('')}</table></div>`;
+  h+=`<div class="pagehead" style="margin:20px 0 0"><h2 style="margin:0;font-size:17px">Sessions here</h2></div>${sessionList(t.sessions,{noTrack:true})}`;
+  main().innerHTML=h;const cs=rec?rec.corners:[];trackMap($('tMap'),t.map,cs,true);
+  if(cs.length)$('tCorners').innerHTML='<tr><th>Turn</th><th>Brake at</th><th>Apex</th><th>Exit</th><th>Avg loss</th><th>Most often</th></tr>'+[...cs].sort((a,b)=>a.turn-b.turn).map(c=>{const x=c.reference,top=Object.entries(c.main_causes||{}).sort((a,b)=>b[1]-a[1])[0];
+    return `<tr><td>${c.turn}</td><td>${x.brake_s?Math.round(x.brake_s)+' m':'no braking'}</td><td>${x.min_speed??'–'} km/h</td><td>${x.exit_speed??'–'} km/h</td><td>${sgn(c.avg_loss_s)} s</td><td>${top?esc(CAUSE[top[0]]):'–'}</td></tr>`}).join('');
+  if($('trName'))$('trName').onclick=async()=>{const name=prompt('The name of this track. Leave it empty to take the name away.',t.named?t.name:'');if(name===null||(!name.trim()&&!t.named))return;const x=await adminPost('/api/track-name',{id,name:name.trim()});if(x.ok)route();else alert(x.error||'Not saved.')}}
+
+/* ================= sessions ================= */
+async function pageSessions(r,alive){if(r.args[0])return pageSession(r,alive);
+  const all=await get('/api/sessions');if(!alive())return;
+  const cars=[...new Map(all.map(s=>[s.car_code,s.car])).entries()].sort((a,b)=>a[1].localeCompare(b[1])),tracks=[...new Map(all.filter(s=>s.track_id).map(s=>[s.track_id,s.track])).entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+  main().innerHTML=head('Sessions',plural(all.length,'session'))+(all.length?`<div class="toolbar"><select id="fCar" aria-label="Car"><option value="">Every car</option>${cars.map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select>
+    <select id="fTrack" aria-label="Track"><option value="">Every track</option>${tracks.map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select>
+    <label class="small mut"><input type="checkbox" id="fBest"> only sessions with a best lap</label><span class="spacer"></span><span class="small mut" id="fCount"></span></div><div id="sList"></div>`:empty('No sessions recorded yet.','Drive a few laps and they appear here.'));
+  if(!all.length)return;
+  $('fCar').value=r.q.get('car')||'';$('fTrack').value=r.q.get('track')||'';
+  const draw=()=>{const c=$('fCar').value,t=$('fTrack').value,b=$('fBest').checked,list=all.filter(s=>(!c||s.car_code==c)&&(!t||s.track_id==t)&&(!b||s.record));
+    $('fCount').textContent=list.length===all.length?'':list.length+' shown';$('sList').innerHTML=list.length?sessionList(list):empty('No session matches.','Clear a filter.')};
+  for(const k of ['fCar','fTrack','fBest'])$(k).onchange=draw;draw()}
+async function pageSession(r,alive){const id=+r.args[0],d=await get('/api/session?id='+id);if(!alive())return;const host=main();
+  if(d.error){host.innerHTML=empty('This session could not be opened.',esc(d.error));return}
+  const c=d.consistency||{},beh=d.car_behaviour,pl=beh&&beh.per_lap_avg,ta=d.tune_advice,nrec=ta&&ta.ready?(ta.recommended||[]).length:0;
+  let h=`<div class="crumb"><a href="#sessions">Sessions</a> / ${esc(d.started)}</div>`+head(esc(d.track?d.track.name:'Unknown track'),`<a href="#cars/${d.car.code}">${esc(d.car.name)}</a> · ${esc(d.started)} · ${plural(d.laps.length,'lap')}`,'',d.track?`<a class="btn small" href="#tracks/${d.track.id}">Track</a>`:'');
+  h+=`<div class="grid tiles">${tile('Best lap',esc(d.best?d.best.time:'–'),d.best?'lap '+d.best.lap+(d.all_time_best&&d.all_time_best.this_session?' · your best in this car here':''):'')}${tile('Ideal lap',esc(d.ideal_lap||'–'),'best of each corner added up')}${tile('Median lap',esc(c.median||'–'),c.laps?c.laps+' timed laps':'')}${tile('Spread',c.spread_s!=null?c.spread_s.toFixed(2)+'<small> s</small>':'–','slowest minus fastest')}</div>`;
+  if(ta)h+=`<div class="card gap" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:220px"><h2>Car settings</h2><div class="small mut">${nrec?plural(nrec,'change')+' suggested from these laps: '+ta.recommended.map(x=>esc(x.game_setting)).join(', ')+'.':ta.ready?((ta.items||[]).length?esc(ta.items.map(i=>i.problem).join('. '))+'.':'Nothing to change on the car from these laps.'):esc((ta.notes||[])[0]||'')}</div></div>${ta.ready?`<a class="btn ${nrec?'primary':''}" href="#cars/${d.car.code}/suggested?session=${id}">Open the suggested tune</a>`:''}</div>`;
+  h+=`<div class="grid two gap"><div class="card"><h2>Seconds off your best, lap by lap</h2><div class="sub">Faded bars are standing-start laps</div><div id="cGap"></div></div>
+      <div class="card"><h2>Where the time goes</h2><div class="sub">Average seconds lost per corner against the reference lap</div><div id="cCorners"></div></div></div>`;
+  if(d.map)h+=`<div class="grid two gap"><div class="card"><h2>Track</h2><div class="sub">Orange corners cost the most time · red dot is the start line</div><div id="cMap"></div></div>
+      <div class="card"><h2>Corner detail</h2><div class="sub">Reference lap values, and what goes wrong most often</div><div class="scroll"><table id="tCorners"></table></div></div></div>`;
+  if(d.map&&d.reference_lap_id)h+=`<div class="card gap"><h2>Lap against the reference</h2><div class="sub">Compare <select id="lapSel"></select> with your best lap on this track in this car</div><div id="cTrace"></div></div>`;
+  if(pl)h+=`<div class="grid two gap"><div class="card"><h2>Car behaviour</h2><div class="sub">Averages per lap</div><table>
+      <tr><th>Measure</th><th>Front</th><th>Rear</th></tr>
+      <tr><td>Wheelspin (s)</td><td>${pl.spin_f_s}</td><td>${pl.spin_r_s}</td></tr><tr><td>Lockups (s)</td><td>${pl.lock_f_s}</td><td>${pl.lock_r_s}</td></tr>
+      <tr><td>Tyre temp, last lap (°C)</td><td>${((beh.tyre_avg_last_lap.fl+beh.tyre_avg_last_lap.fr)/2).toFixed(0)}</td><td>${((beh.tyre_avg_last_lap.rl+beh.tyre_avg_last_lap.rr)/2).toFixed(0)}</td></tr></table>
+      <h3>Driving</h3><table><tr><td>Full throttle</td><td>${pl.full_throttle_pct}%</td></tr><tr><td>Braking</td><td>${pl.braking_pct}%</td></tr><tr><td>Coasting</td><td>${pl.coasting_pct}%</td></tr>
+      <tr><td>On the rev limiter</td><td>${pl.limiter_s} s</td></tr><tr><td>Traction control cutting in</td><td>${pl.tcs_s} s</td></tr><tr><td>Top speed</td><td>${pl.max_speed} km/h</td></tr><tr><td>Fuel per lap</td><td>${pl.fuel_used}</td></tr></table></div>
+      <div class="card"><h2>Laps</h2><div class="sub">Every lap in this session</div><div class="scroll"><table><tr><th>Lap</th><th>Time</th><th>Fuel used</th><th></th></tr>${d.laps.map(l=>`<tr><td>${l.lap}</td><td>${esc(l.time)}</td><td>${l.fuel_used}</td><td>${l.first_lap?'<span class="pill">standing start</span>':''}${d.best&&l.lap===d.best.lap?'<span class="pill good">best</span>':''}</td></tr>`).join('')}</table></div></div></div>`;
+  host.innerHTML=h;gapBars($('cGap'),d.laps);cornerBars($('cCorners'),d.corners||[]);
+  if(d.map){trackMap($('cMap'),d.map,d.corners||[]);
+    $('tCorners').innerHTML='<tr><th>Turn</th><th>Brake at</th><th>Apex</th><th>Exit</th><th>Avg loss</th><th>Most often</th></tr>'+[...(d.corners||[])].sort((a,b)=>a.turn-b.turn).map(c=>{const x=c.reference,top=Object.entries(c.main_causes||{}).sort((a,b)=>b[1]-a[1])[0];
+      return `<tr><td>${c.turn}</td><td>${x.brake_s?Math.round(x.brake_s)+' m':'no braking'}</td><td>${x.min_speed??'–'} km/h</td><td>${x.exit_speed??'–'} km/h</td><td>${sgn(c.avg_loss_s)} s</td><td>${top?esc(CAUSE[top[0]]):'–'}</td></tr>`}).join('')}
+  if(d.map&&d.reference_lap_id){const sel=$('lapSel'),timed=d.laps.filter(l=>l.ms>0&&d.lap_ids[l.lap]);
+    sel.innerHTML=timed.map(l=>`<option value="${d.lap_ids[l.lap]}">lap ${l.lap} · ${esc(l.time)}</option>`).join('');
+    const others=timed.filter(l=>d.lap_ids[l.lap]!==d.reference_lap_id);if(others.length)sel.value=d.lap_ids[others[others.length-1].lap];
+    const ref=await get('/api/trace?lap='+d.reference_lap_id);
+    const draw=async()=>{const lap=await get('/api/trace?lap='+sel.value);if(alive()&&!ref.error&&!lap.error)traceChart($('cTrace'),ref,lap,d.map.corners)};
+    sel.onchange=draw;draw()}}
+
+/* ================= screenshots ================= */
+async function pageShots(r,alive){const car=r.q.get('car')||'',group=r.q.get('show')||'';
+  const [f,box,d,admin]=await Promise.all([get('/api/features'),get('/api/inbox'),get('/api/shots?limit=120'+(car?'&car='+car:'')+(group?'&group='+group:'')),isAdmin()]);if(!alive())return;
+  const R=box.routes||{},link=g=>'#screenshots'+(g||car?'?':'')+[g?'show='+g:'',car?'car='+car:''].filter(Boolean).join('&');
+  let h=head('Screenshots',d.all?plural(d.all,'picture')+' kept':'');
+  h+=`<div class="card"><h2>Read a screen</h2><div class="sub">Press Create on the Car Settings screen (both pages) or an event screen, for as many cars as you like, then read them here in one go. Each car gets its settings filed, a car that is new is added to Cars, and every picture is kept here.</div>`;
+  if(!f.screenshots.ready)h+=`<div class="mut small">${esc(f.screenshots.why)} <a href="#settings">Open Settings</a></div>`;
+  else{h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">`;
+    if(R.upload&&R.upload.on)h+=`<input type="file" id="shotFile" accept="image/jpeg,image/png,image/webp"><button class="btn" id="shotUp">Read the picture</button>`;
+    if(R.phone&&R.phone.on)h+=`<button class="btn primary" id="shotNew">Read new PS5 screenshots</button><button class="btn" id="shotBack" title="Goes through the whole captures list in the PlayStation App and reads the ones that were never read">Look back at older ones</button><button class="btn" id="shotPhone">Read the newest again</button>`;
+    h+=`</div><div class="note" id="shotNote"></div><div class="small mut" style="margin-top:10px">Ways in: `+[['upload','Upload'],['phone','Virtual phone'],['share','Share sheet (Android)'],['shortcut','Shortcut (iPhone)'],['folder','Watched folder']].map(([k,t])=>`${t} <b style="color:${R[k]&&R[k].on?'var(--good)':'var(--mut)'}">${R[k]&&R[k].on?'on':'off'}</b>`).join(' · ')+`. Voice: “Copilot, read my screenshots”.</div>`}
+  h+=`</div>`;
+  h+=`<div class="seg">${[['','All',d.all],['settings','Car settings',d.counts.settings],['event','Events',d.counts.event],['other','Other',d.counts.other],['failed','Not filed',d.counts.failed]].map(([g,t,n])=>`<a href="${link(g)}" aria-current="${g===group}">${t} <span class="count">${n}</span></a>`).join('')}${car?`<span class="spacer"></span><a href="${'#screenshots'+(group?'?show='+group:'')}" style="font-size:13px">Showing one car · show every car</a>`:''}</div>`;
+  h+=d.shots.length?`<div class="grid shots">${d.shots.map((s,i)=>`<button class="card shot" data-i="${i}"><img class="im" loading="lazy" src="${s.url}" alt="${esc(s.kind_label)}">
+    <div class="tx"><div class="t">${esc(s.car||s.kind_label)}</div><div class="d"><span class="pill ${s.ok?'good':'bad'}" style="margin-bottom:0">${s.ok?'filed':'not filed'}</span>${esc(s.kind_label)} · ${ago(s.at)}${s.route?' · '+esc(s.route):''}</div></div></button>`).join('')}</div>`:
+    empty(d.all?'Nothing in this group.':'No screenshots yet.',d.all?'':'Every picture the copilot reads is kept here: settings screens, event screens and anything else you send.');
+  main().innerHTML=h;
+  const run=async(body,q)=>{const n=$('shotNote');n.className='note';n.textContent=q?'Fetching from the PlayStation App. About half a minute.':'Reading the picture.';
+    try{const x=await (await fetch('/api/screenshot'+q,{method:'POST',headers:{'X-GT7C':'1'},body})).json();n.className='note '+(x.ok?'ok':'bad');const text=x.reply||x.error||'No answer.';await pageShots(r,alive);if($('shotNote')){$('shotNote').className='note '+(x.ok?'ok':'bad');$('shotNote').textContent=text}}
+    catch(e){n.className='note bad';n.textContent='The copilot did not answer.'}};
+  if($('shotUp'))$('shotUp').onclick=()=>{const file=$('shotFile').files[0];if(!file){$('shotNote').className='note bad';$('shotNote').textContent='Choose a picture first.';return}run(file,'')};
+  if($('shotPhone'))$('shotPhone').onclick=()=>run('','?source=phone');
+  // Every capture not read before: started here, done in the background, followed by asking how far it is.
+  const done=async j=>{const x=j.result||{};await pageShots(r,alive);const n=$('shotNote');if(!n)return;n.className='note '+(x.ok?'ok':'bad');
+    n.innerHTML=esc(x.reply||'No answer.')+(x.cars&&x.cars.length?' '+[...new Set(x.cars)].map(c=>`<a href="#cars/${c}">Open the car</a>`).join(' · '):'')};
+  const follow=async()=>{while(alive()){let j;try{j=await get('/api/screenshots/job')}catch(e){await sleep(3000);continue}
+      if(!j.running){if(j.result)await done(j);return}
+      const n=$('shotNote');if(n){n.className='note';n.textContent=j.step||'Working.'}
+      ['shotNew','shotBack','shotPhone','shotUp'].forEach(i=>$(i)&&($(i).disabled=true));await sleep(2000)}};
+  const start=async back=>{const n=$('shotNote');n.className='note';n.textContent='Opening the PlayStation App.';
+    try{const x=await (await fetch('/api/screenshots/read'+(back?'?back=1':''),{method:'POST',headers:{'X-GT7C':'1'},body:''})).json();if(!x.ok){n.className='note bad';n.textContent=x.reply||'It did not start.';return}follow()}
+    catch(e){n.className='note bad';n.textContent='The copilot did not answer.'}};
+  if($('shotNew')){$('shotNew').onclick=()=>start(false);$('shotBack').onclick=()=>start(true);
+    get('/api/screenshots/job').then(j=>{if(j.running&&alive())follow()}).catch(()=>{})}
+  main().querySelectorAll('.shot').forEach(b=>b.onclick=()=>openShot(d.shots[+b.dataset.i],admin))}
+async function openShot(s,admin){const box=$('box'),inn=box.firstElementChild;
+  let cars=[];if(admin&&!s.car_code)try{cars=(await get('/api/cars')).cars}catch(e){}
+  inn.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn" id="boxX">Close</button></div><img src="${s.url}" alt="${esc(s.kind_label)}">
+    <div class="meta card"><h2>${esc(s.kind_label)}${s.car?' · <a href="#cars/'+s.car_code+'">'+esc(s.car)+'</a>':''}</h2><div class="sub">${esc(s.when)}${s.route?' · came by '+esc(s.route):''} · ${(s.bytes/1e6).toFixed(1)} MB</div>
+    ${s.summary?`<p style="margin:0 0 6px">${esc(s.summary)}</p>`:''}<p style="margin:0" class="${s.ok?'':'note bad'}">${s.ok?'':'<b>Not filed.</b> '}${esc(s.reply||'')}</p>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><a class="btn small" href="${s.url}" target="_blank" rel="noopener">Open full size</a>
+    ${admin?(s.car_code?`<button class="btn small" id="boxCover">${s.cover?'Stop using as this car\'s picture':'Use as this car\'s picture'}</button>`:(cars.length?`<select id="boxCar"><option value="">Which car is this?</option>${cars.map(c=>`<option value="${c.code}">${esc(c.name)}</option>`).join('')}</select><button class="btn small" id="boxCover">Use as that car's picture</button>`:''))+`<button class="btn small" id="boxDel">Delete</button>`:'<span class="small mut">Sign in on Settings to delete a picture or use it as a car\'s picture.</span>'}</div><div class="note" id="boxNote"></div></div>`;
+  box.style.display='block';const close=()=>{box.style.display='none';inn.innerHTML=''};
+  $('boxX').onclick=close;box.onclick=e=>{if(e.target===box)close()};inn.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',close));
+  if($('boxDel'))$('boxDel').onclick=async()=>{if(!confirm('Delete this picture? The settings read from it stay on file.'))return;const x=await adminPost('/api/admin/shot-delete',{id:s.id});if(x.ok){close();route()}else $('boxNote').textContent=x.error||'Not deleted.'};
+  if($('boxCover'))$('boxCover').onclick=async()=>{const car=s.car_code||($('boxCar')&&+$('boxCar').value);if(!car){$('boxNote').className='note bad';$('boxNote').textContent='Choose the car first.';return}
+    const x=await adminPost('/api/admin/shot-set',{id:s.id,car,cover:!s.cover});if(x.ok){close();go('cars/'+car)}else{$('boxNote').className='note bad';$('boxNote').textContent=x.error||'Not saved.'}}}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('box').style.display==='block'){$('box').style.display='none';$('box').firstElementChild.innerHTML=''}});
+
+/* ================= phone ================= */
+async function pagePhone(r,alive){const p=await get('/api/phone');if(!alive())return;const hl=p.health;
+  let h=head('Phone','The virtual Android phone that runs the PlayStation App');
+  if(!p.on){main().innerHTML=h+empty('The virtual phone is switched off.','It fetches PS5 screenshots out of the PlayStation App without touching a real phone. <a href="#settings">Switch it on in Settings</a>, group Screenshots.');return}
+  const side=`<div class="grid" style="align-content:start"><div class="card"><h2>Phone status</h2><div class="sub">${hl?(hl.ok===false?'<span class="dot"></span> ':'<span class="dot on"></span> ')+esc(hl.note||(hl.ok===false?'Not ready':'Ready')):esc(p.fetch_ready?'':'The phone\'s address is not set in Settings.')}</div>
+      <button class="btn primary" id="phFetch" ${p.fetch_ready?'':'disabled'}>Fetch the newest PS5 capture</button><div class="note" id="phNote"></div>
+      <p class="small mut" style="margin:12px 0 0">On the PS5, press the Create button on the screen you want. The capture reaches the PlayStation App here; the copilot opens it, reads it and files it. About half a minute.</p></div>
+    <div class="card"><h2>Good to know</h2><ul class="small mut" style="margin:6px 0 0;padding-left:18px"><li>If the phone restarts it waits on its lock screen. Unlock it here with the PIN.</li><li>A black screen means the phone is asleep or still starting. Give it a minute.</li><li>Fetched pictures are on the <a href="#screenshots">Screenshots</a> page.</li></ul></div></div>`;
+  if(!p.ready)h+=`<div class="phonewrap"><div class="card empty"><b>The phone's screen is not connected to this page yet.</b>${esc(p.why||'')} Enter the screen address (the phone's web view, port 6080) in <a href="#settings">Settings</a>, group Screenshots.</div>${side}</div>`;
+  else if(!p.signed_in)h+=`<div class="phonewrap"><div class="card empty"><b>Sign in to see the phone.</b>The phone is signed in to your PlayStation account, so its screen is only shown to the admin. <a href="#settings">${p.admin_set?'Sign in on Settings':'Set the admin password on Settings'}</a>, then come back.</div>${side}</div>`;
+  else h+=`<div class="phonewrap"><div><div class="phone"><iframe src="${esc(p.src)}" title="The virtual phone's screen" allow="clipboard-read; clipboard-write"></iframe></div><div style="text-align:center;margin-top:10px"><a class="btn small" href="${esc(p.src)}" target="_blank" rel="noopener">Open in its own tab</a> <button class="btn small" id="phReload">Reconnect</button></div></div>${side}</div>`;
+  main().innerHTML=h;
+  if($('phReload'))$('phReload').onclick=()=>route();
+  $('phFetch').onclick=async()=>{const n=$('phNote');n.className='note';n.textContent='Fetching from the PlayStation App. About half a minute.';$('phFetch').disabled=true;
+    try{const x=await (await fetch('/api/screenshot?source=phone',{method:'POST',headers:{'X-GT7C':'1'},body:''})).json();n.className='note '+(x.ok?'ok':'bad');n.textContent=x.reply||x.error||'No answer.'}catch(e){n.className='note bad';n.textContent='The copilot did not answer.'}
+    if($('phFetch'))$('phFetch').disabled=false}}
+
+/* ================= ask ================= */
+let askTurns=[],askBusy=false,askReady=false;
+const askWhere=()=>{const w={};if(ROUTE.page==='cars'&&ROUTE.args[0])w.car=+ROUTE.args[0];if(ROUTE.page==='tracks'&&ROUTE.args[0])w.track=+ROUTE.args[0];
+  if(ROUTE.page==='sessions'&&ROUTE.args[0])w.session=+ROUTE.args[0];if(ROUTE.q.get('session'))w.session=+ROUTE.q.get('session');return w};
+function askDraw(){const log=$('askLog'),w=askWhere();
+  $('askAbout').textContent=w.car?'about this car':w.track?'about this track':w.session?'about this session':'';
+  const ex=w.car?['What should I change on this car next?','What did my last change do?','Take a screenshot']:w.track?['Which of my cars is fastest here?','Which corners cost me the most here?','What should I change for this track?']:
+    w.session?['How consistent was this session?','Where did I lose the most time?','What does the car need after these laps?']:['What should I change on the car next?','Where am I losing the most time?','Take a screenshot'];
+  log.innerHTML=askTurns.length?askTurns.map(t=>`<div class="q">${esc(t.q)}</div><div class="a${t.err?' err':t.a==null?' wait':''}">${esc(t.a==null?(t.shot?'Fetching the newest PS5 capture and reading it. About 20 seconds.':'Working it out from your laps…'):t.a)}${(t.shots||[]).map(i=>`<a href="#screenshots"><img src="/shots/${i}" alt="The screenshot" style="display:block;max-width:100%;border-radius:8px;margin-top:8px"></a>`).join('')}</div>`).join(''):
+    `<div class="a">Ask in plain words. The answer comes from your own laps, settings and filed tuning guides, worked out by the app and put into words by the model. Nothing is stored.</div><div class="ex">${ex.map(x=>`<button class="btn small" data-ex="${esc(x)}">${esc(x)}</button>`).join('')}</div>`;
+  log.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>askSend(b.dataset.ex));log.scrollTop=log.scrollHeight}
+async function askSend(q){q=(q||'').trim();if(!q||askBusy)return;askBusy=true;$('askGo').disabled=true;$('askQ').value='';
+  const turn={q,a:null,shot:/\b(take|grab|fetch|get|read|capture)\b.{0,30}\b(screen ?shot|capture|screen)\b/i.test(q)},h=askTurns.filter(t=>t.a&&!t.err).slice(-3).map(t=>({q:t.q,a:t.a}));askTurns.push(turn);askDraw();
+  try{const r=await adminPost('/api/ask',{q,h,where:askWhere()});if(r.answer){turn.a=r.answer;turn.shots=r.shots}else{turn.a=r.error||'No answer.';turn.err=true}}
+  catch(e){turn.a='The copilot did not answer.';turn.err=true}
+  askBusy=false;$('askGo').disabled=false;askDraw();$('askQ').focus()}
+$('askBtn').onclick=()=>{$('askPanel').hidden=false;$('askBtn').hidden=true;askDraw();$('askQ').focus()};
+$('askX').onclick=()=>{$('askPanel').hidden=true;$('askBtn').hidden=!askReady};
+$('askClear').onclick=()=>{askTurns=[];askDraw()};
+$('askForm').onsubmit=e=>{e.preventDefault();askSend($('askQ').value)};
+addEventListener('hashchange',()=>{if(!$('askPanel').hidden)setTimeout(askDraw,0)});
+
+/* ================= settings ================= */
+const TESTS={Console:[['console','Test'],['find','Find the console']],'Voice control':[['whisper','Test speech-to-text']],Screenshots:[['vision','Test the vision model'],['phone','Test the virtual phone']]};
+async function pageSettings(r,alive,d){d=d||await get('/api/settings');if(!alive())return;ADMIN=!!d.signed_in;const host=main();
+  if(!d.signed_in){const first=!d.admin_set;
+    host.innerHTML=head('Settings')+`<div class="card" style="max-width:560px"><h2>${first?'Set an admin password':'Sign in'}</h2>
+      <div class="sub">${first?'Settings are protected by a password. Choose one now (8 characters or more). The driving pages stay open to everyone on the network.':'Changing settings needs the admin password.'}</div>
+      <div class="set"><label for="pw">Password</label><div><input type="password" id="pw" autocomplete="${first?'new-password':'current-password'}"></div></div>
+      <div style="margin-top:12px"><button class="btn primary" id="pwGo">${first?'Set password':'Sign in'}</button></div><div class="note bad" id="pwNote"></div></div>`;
+    const goIn=async()=>{const x=await adminPost(first?'/api/admin/setup':'/api/admin/login',{password:$('pw').value});
+      if(x.signed_in)pageSettings(r,alive,x);else $('pwNote').textContent=x.error||'That did not work.'};
+    $('pwGo').onclick=goIn;$('pw').onkeydown=e=>{if(e.key==='Enter')goIn()};return}
+  const F=d.features,state={Console:F.console,'Voice control':F.voice_control,Screenshots:F.screenshots,Ask:F.ask,Earpiece:F.earpiece,'Agent door':F.agent_door};
+  let h=head('Settings','Changes are in use as soon as they are saved')+'<div class="grid">';
+  for(const g of d.groups){const st=state[g.title];
+    h+=`<div class="card" data-group="${esc(g.title)}"><h2 style="font-size:16px">${esc(g.title)}</h2>
+      <div class="sub">${st?(st.ready?'<span class="dot on"></span> Ready':'<span class="dot"></span> '+esc(st.why||'Off')):''}</div><div class="set">`;
+    for(const x of g.rows){h+=`<label for="s_${x.key}">${esc(x.label)}</label><div>`;
+      if(x.kind==='bool')h+=`<input type="checkbox" id="s_${x.key}" ${x.value?'checked':''}>`;
+      else if(x.kind==='choice')h+=`<select id="s_${x.key}">${x.choices.map(c=>`<option ${c===x.value?'selected':''}>${esc(c)}</option>`).join('')}</select>`;
+      else if(x.kind==='secret')h+=`<span class="pill">${x.set?'set':'not set'}</span> `+(x.generated?`<button class="btn small" data-gen="${x.key}">${x.set?'Rotate':'Generate'}</button>`:`<input type="password" id="s_${x.key}" placeholder="${x.set?'leave empty to keep':''}" autocomplete="off" style="max-width:300px"> ${x.set?`<button class="btn small" data-clear="${x.key}">Clear</button>`:''}`);
+      else h+=`<input type="${x.kind==='int'?'number':'text'}" id="s_${x.key}" value="${esc(x.value)}">`;
+      h+=`<div class="help">${esc(x.help)}</div></div>`}
+    h+=`</div>`;
+    if(g.title==='Screenshots'&&d.phone_view_password)h+=`<div class="help mut small" style="margin-top:8px">Virtual phone web view: the <a href="#phone">Phone</a> page, or port 6080 on this machine with the password <code>${esc(d.phone_view_password)}</code></div>`;
+    if(g.title==='Screenshots')h+=`<div class="help mut small" style="margin-top:8px"><b>Share sheet (Android).</b> Open this page in Chrome on the phone, menu, "Install app" or "Add to Home screen". GT7 Copilot then appears when a picture is shared, for example from the PlayStation App. ${location.protocol==='https:'?'':'<b>This page is open over http: installing and sharing need https.</b>'} iPhones have no such share target; use the Shortcut.</div>
+      <div class="help mut small" style="margin-top:6px"><b>Shortcut (iPhone).</b> A Shortcut posts the picture to <code>${esc(location.origin)}/api/shot</code> with the header <code>X-GT7C-Share</code> set to the share token. The steps are in docs/screenshots.md. Generate the token here; it is shown once.</div>
+      <div class="help mut small" style="margin-top:6px"><b>Watched folder.</b> Any photo sync (Syncthing, a NAS photo app) can fill it. Read pictures move to <code>done</code>, others to <code>failed</code> with the reason beside them.</div>`;
+    if(g.title==='Earpiece'&&F.earpiece.ready)h+=`<div class="help small" style="margin-top:8px">Download the installer on the machine that plays the calls (address and token filled in; only while signed in here): <a href="/earpiece/setup.ps1">Windows</a> · <a href="/earpiece/setup-mac.sh">Mac</a>. How to run it: docs/earpiece.md.</div>`;
+    h+=`<div style="margin-top:12px"><button class="btn primary" data-save="${esc(g.title)}">Save</button> `+(TESTS[g.title]||[]).map(([k,t])=>`<button class="btn" data-test="${k}">${t}</button>`).join(' ')+`</div><div class="note" data-note="${esc(g.title)}"></div></div>`}
+  if(d.door)h+=`<div class="card"><h2 style="font-size:16px">Admin</h2><div class="sub">This installation trusts the sign-in in front of the page (GT7C_TRUST_DOOR): everyone who gets through it is the admin, so there is no password here.</div></div></div>`;
+  else h+=`<div class="card"><h2 style="font-size:16px">Admin</h2><div class="set"><label for="npw">New password</label><div><input type="password" id="npw" autocomplete="new-password"></div></div>
+    <div style="margin-top:12px"><button class="btn" id="npwGo">Change password</button> <button class="btn" id="out">Sign out</button></div><div class="note" id="npwNote"></div></div></div>`;
+  host.innerHTML=h;
+  const note=(card,ok,text)=>{const n=card.querySelector('.note');n.className='note '+(ok?'ok':'bad');n.textContent=text};
+  const collect=g=>{const o={};for(const x of g.rows){const e=$('s_'+x.key);if(!e)continue;o[x.key]=x.kind==='bool'?e.checked:x.kind==='int'?+e.value:e.value}return o};
+  const saveGroup=(g,extra)=>adminPost('/api/settings',Object.assign(collect(g),extra||{}));
+  const card=t=>host.querySelector(`[data-group="${t}"]`);
+  for(const g of d.groups){const cd=card(g.title);
+    cd.querySelector('[data-save]').onclick=async()=>{const x=await saveGroup(g);if(x.ok){await pageSettings(r,alive,x);note(card(g.title),true,'Saved. In use now.')}else note(cd,false,x.error||'Not saved.')};
+    cd.querySelectorAll('[data-gen]').forEach(b=>b.onclick=async()=>{if(b.textContent==='Rotate'&&!confirm('Make a new token? The old one stops working at once.'))return;
+      const x=await saveGroup(g,{generate:[b.dataset.gen]});if(x.ok){await pageSettings(r,alive,x);const n=card(g.title).querySelector('.note');n.className='note ok';n.innerHTML='New token, shown once: <code style="user-select:all">'+esc((x.new_tokens||{})[b.dataset.gen]||'')+'</code>'+(b.dataset.gen==='earpiece_token'?' (the installer download has it filled in)':'')}else note(cd,false,x.error||'Not saved.')});
+    cd.querySelectorAll('[data-clear]').forEach(b=>b.onclick=async()=>{const x=await saveGroup(g,{clear:[b.dataset.clear]});if(x.ok)pageSettings(r,alive,x);else note(cd,false,x.error||'Not saved.')});
+    cd.querySelectorAll('[data-test]').forEach(b=>b.onclick=async()=>{note(cd,true,'Testing…');const body={what:b.dataset.test};
+      if(g.title==='Console')body.address=$('s_ps5').value;else{const x=await saveGroup(g);if(!x.ok)return note(cd,false,x.error||'Not saved.')}
+      const x=await adminPost('/api/settings/test',body);if(x.address)$('s_ps5').value=x.address;note(cd,!!x.ok,x.note||x.error||'No answer.')})}
+  if($('npwGo'))$('npwGo').onclick=async()=>{const x=await adminPost('/api/admin/password',{password:$('npw').value});const n=$('npwNote');n.className='note '+(x.signed_in?'ok':'bad');n.textContent=x.signed_in?'Password changed.':(x.error||'Not changed.')};
+  if($('out'))$('out').onclick=async()=>{await adminPost('/api/admin/logout');ADMIN=false;route()}}
+
+/* ================= live: audio + telemetry ================= */
+let armed=false,playing=false,queue=[],enabled=true;
+function speakFallback(t){try{speechSynthesis.speak(new SpeechSynthesisUtterance(t))}catch(e){}}
+function next(){if(playing||!queue.length)return;const ev=queue.shift();
+  if(ev.deadline&&Date.now()/1000>ev.deadline+1)return next();
+  $('said').textContent=ev.text;if(!armed)return next();
+  if(!ev.url){speakFallback(ev.text);return next()}
+  playing=true;const a=new Audio(ev.url);a.onended=a.onerror=()=>{playing=false;next()};
+  a.play().catch(()=>{playing=false;speakFallback(ev.text);next()})}
+// SimHub on the sim PC, as the earpiece reports it: the program running, the game it is set to, data arriving.
+function simhubTile(ep,live){const big=x=>`<span style="font-size:19px">${x}</span>`,gt7=/gran\s*turismo\s*7|gt7/i.test(ep.simhub_game||'');
+  let c='on',v='Running',n='';
+  if(!ep.simhub){c='bad';v='Not running';n='start SimHub on the sim PC'}
+  else if(ep.simhub_api===false){c='warn';v='Running';n='it does not answer yet (still starting, or its web server is off)'}
+  else if(ep.simhub_game&&!gt7){c='warn';v='Wrong game';n='set to '+esc(ep.simhub_game)+', choose Gran Turismo 7 in SimHub'}
+  else if(ep.simhub_game){if(ep.simhub_data)n='Gran Turismo 7 · receiving the car\'s data';else if(live){c='warn';n='Gran Turismo 7 · no data from the console, though the car is on track'}else n='Gran Turismo 7 · waiting for the car to be on track'}
+  return tile('SimHub',big(`<span class="dot ${c}"></span> ${v}`),n)}
+function renderLive(s){const n=s.now,tr=s.track,big=x=>`<span style="font-size:19px">${x}</span>`;
+  $('liveChip').innerHTML=`<span class="dot ${s.live?'on':''}"></span><span class="lbl">${s.live?'On track'+(tr&&tr.name?' · '+esc(tr.name):''):'Idle'}</span>`;
+  $('navPhone').hidden=!s.phone_on;askReady=!!s.ask;$('askBtn').hidden=!askReady||!$('askPanel').hidden;
+  if($('p-live').hidden)return;
+  const d=s.delta,dTxt=d==null?'–':sgn(d),dNote=d==null?'needs a best lap on this track':(d<=0?'▲ ahead of your best':'▼ behind your best');
+  let h=tile('Status',`<span class="dot ${s.live?'on':''}"></span> ${s.live?'On track':'Idle'}`,s.live?'telemetry arriving':'waiting for the car to be on track');
+  h+=tile('Car',s.car?big(`<a href="#cars/${s.car}" style="color:inherit">${esc(s.car_name||('Car '+s.car))}</a>`):'–',s.tune&&s.tune.on_file?'settings sheet on file':(s.car?'no settings sheet on file':''));
+  h+=tile('Track',tr?big(`<a href="#tracks/${tr.id}" style="color:inherit">${esc(tr.name||('Track '+tr.id+' (not named yet)'))}</a>`):big('<span class="mut">'+(s.live?(s.track_guess?'looks like '+esc(s.track_guess):'learning it: finish a lap'):'–')+'</span>'),tr?(tr.length/1000).toFixed(2)+' km · '+tr.corners+' corners':(s.track_guess?'the layout is confirmed at the line':''));
+  h+=tile('Lap',(s.lap??'–')+(s.total_laps>0?'<small> / '+s.total_laps+'</small>':''),'best '+fmt(s.best_ms));
+  h+=tile('Gap to best',dTxt+(d==null?'':'<small> s</small>'),dNote);
+  h+=tile('Speed',n?n.kmh+'<small> km/h</small>':'–',n?'gear '+n.gear+' · '+n.rpm+' rpm':'');
+  if(s.tune&&(s.tune.library||s.tune.in_library))h+=tile('Tune',s.tune.library?big(esc(s.tune.library.title)):s.tune.in_library+'<small> on file</small>',s.tune.library?(s.tune.library.author?'by '+esc(s.tune.library.author):'from the library'):'none matched to the car');
+  h+=tile('Fuel',n?n.fuel:'–',n?'throttle '+n.thr+'% · brake '+n.brk+'%':'');
+  h+=`<div class="card tile"><div class="k">Tyre temps °C</div><div class="tyres">${['FL','FR','RL','RR'].map((w,i)=>`<div><span>${w}</span>${n?n.tyres[i]:'–'}</div>`).join('')}</div></div>`;
+  const ps=s.console;
+  if(ps&&s.console_set!==false&&ps.power){const P={on:['on','On'],rest:['warn','Rest mode'],off:['bad','Off']}[ps.power];
+    h+=tile('PlayStation',big(`<span class="dot ${P[0]}"></span> ${P[1]}`),ps.power=='off'?'no answer from the console: switch it on':ps.power=='rest'?'wake the console and start Gran Turismo 7':ps.game?'Gran Turismo 7 is sending data':'no data yet: Gran Turismo 7 sends it once the car is on track')}
+  const ep=s.earpiece;
+  if(ep)h+=tile('Earpiece',big(`<span class="dot ${ep.airpod?'on':''}"></span> ${ep.airpod?'Device connected':'Device not connected'}`),esc(ep.note||([ep.device,ep.mic==null?null:ep.mic?'listening for the wake name':'microphone off'].filter(Boolean).join(' · '))));
+  if(ep&&ep.simhub!=null)h+=simhubTile(ep,s.live);
+  else if(s.earpiece_setup)h+=tile('Earpiece',big('<span class="mut">not running</span>'),'Installer: on the <a href="#settings">Settings</a> page, Earpiece group');
+  $('liveTiles').innerHTML=h;$('needConsole').hidden=s.console_set!==false;
+  const laps=s.laps||[],best=Math.min(...laps.map(l=>l.ms).filter(x=>x>0));
+  $('liveSub').innerHTML=laps.length?laps.length+' laps · '+esc(s.car_name||('car '+(s.car??'–')))+(s.session?` · <a href="#sessions/${s.session}">open the session</a>`:''):'No laps yet';
+  $('liveLaps').innerHTML=laps.length?'<tr><th>Lap</th><th>Time</th><th>Gap</th></tr>'+laps.slice(-12).reverse().map(l=>`<tr><td>${l.lap}</td><td>${fmt(l.ms)}</td><td>${l.ms===best?'<span class="pill good">best</span>':sgn((l.ms-best)/1000)}</td></tr>`).join(''):'';
+  if('copilot'in s){enabled=s.copilot;$('mute').textContent=enabled?'Mute copilot':'Unmute copilot'}}
+let lastState=null;
+function connect(){const es=new EventSource('/events');
+  es.onopen=()=>$('conn').textContent='connected to the copilot';
+  es.onerror=()=>{$('conn').textContent='reconnecting';$('liveChip').innerHTML='<span class="dot"></span><span class="lbl">reconnecting</span>'};
+  es.onmessage=m=>{const ev=JSON.parse(m.data);if(ev.type==='state'){lastState=ev;return renderLive(ev)}
+    if(ev.type==='say'){if(queue.length>1)queue.shift();queue.push(ev);next();
+      const row=$('log').insertRow(0);row.innerHTML=`<td class="mut" style="white-space:nowrap">${new Date(ev.t*1000).toLocaleTimeString()}</td><td>${esc(ev.text)}</td>`;
+      while($('log').rows.length>10)$('log').deleteRow(-1)}}}
+$('start').onclick=()=>{armed=true;$('start').textContent='Audio on';
+  new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=').play().catch(()=>{});
+  try{navigator.wakeLock&&navigator.wakeLock.request('screen')}catch(e){}};
+const pagePost=p=>fetch(p,{method:'POST',headers:{'X-GT7C':'1'}});      // the header says the page itself asked, not another site
+$('test').onclick=()=>pagePost('/api/say?text='+encodeURIComponent('Voice check. Turn one. Brake ten metres later.'));
+$('mute').onclick=()=>pagePost('/api/enable?on='+(enabled?0:1));
+addEventListener('hashchange',()=>{if(lastState)renderLive(lastState)});
+
+connect();route();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+# GT7 Copilot: one stack. `docker compose up -d` starts the copilot alone; everything else is set on its Settings tab.
+# Optional parts are profiles:   COMPOSE_PROFILES=phone,voice   in .env (or --profile phone --profile voice).
+name: gt7-copilot
+
+services:
+  # Telemetry, laps, analysis, the page and the spoken calls. Page: http://<this machine>:8765
+  copilot:
+    image: ghcr.io/quinneydavid/gt7-copilot:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${GT7C_HTTP_PORT:-8765}:8765"
+      - "33740:33740/udp"          # the console sends its telemetry to this port, whatever port the request came from
+    environment:
+      # Where the optional parts of this stack are, so their addresses are filled in already. Each part is still
+      # switched on by hand on the Settings tab.
+      GT7C_WHISPER_URL: http://whisper:8000/v1/audio/transcriptions
+      GT7C_GRAB_URL: http://phone:6081
+      GT7C_PHONE_VIEW_URL: http://phone:6080     # the phone's screen, shown on the Phone page to the signed-in admin
+      GT7C_GRAB_TOKEN_FILE: /shared/grab-token
+      GT7C_VNC_PASSWORD_FILE: /shared/vnc-password
+    volumes:
+      - data:/data
+      - shared:/shared
+      # A watched folder for screenshots outside the data volume (docs/screenshots.md), e.g. one a photo sync fills.
+      # Then enter /inbox as the folder on the Settings tab.
+      # - /path/on/this/machine:/inbox
+    # "Find the console" on the Settings tab only works on the console's own network. For that, replace `ports` with:
+    # network_mode: host
+
+  # A virtual Android phone running the PlayStation App, so PS5 screenshots can be fetched without touching a real
+  # phone. Needs an x86-64 Linux host with /dev/kvm, about 9 GB of memory and 7 GB of disk. See docs/phone.md.
+  # The phone's screen is on the copilot's Phone page, for the signed-in admin. Its own web view (port 6080) is published
+  # on this machine only: http://127.0.0.1:6080, with the password shown on the copilot's Settings tab.
+  phone:
+    profiles: [phone]
+    image: ghcr.io/quinneydavid/gt7-copilot-phone:latest
+    build: ./phone
+    restart: unless-stopped
+    depends_on: [copilot]
+    devices: ["/dev/kvm"]
+    group_add: ["${KVM_GID:-994}"]   # the group that owns /dev/kvm on the host:  stat -c %g /dev/kvm
+    environment:
+      ANDROID_LICENSES: "${ANDROID_LICENSES:-}"     # "accept" = Google's Android SDK terms are accepted (docs/phone.md)
+      GRAB_TOKEN_FILE: /shared/grab-token
+      VNC_PASSWORD: "${VNC_PASSWORD:-}"             # empty = one is made and kept in the shared volume
+      VNC_PASSWORD_FILE: /shared/vnc-password
+      IMAGE_PKG: "${IMAGE_PKG:-system-images;android-36;google_apis_playstore;x86_64}"
+      PHONE_CORES: "${PHONE_CORES:-4}"              # cores the emulated phone has; not more than PHONE_CPUS
+      # swangle_indirect: with the default software renderer the emulator crashed when the PlayStation App opened its
+      # sign-in page (about 2 runs in 3, emulator 37.2 and 37.3, Android 15 and 16). swangle_indirect survived 4 of 4.
+      EMU_GPU: "${EMU_GPU:-swangle_indirect}"
+      EMU_ARGS: "${EMU_ARGS:-}"
+    ports:
+      - "127.0.0.1:6080:6080"
+    volumes:
+      - phone:/data
+      - shared:/shared
+    networks: [default, phone6]
+    cpus: "${PHONE_CPUS:-4}"                        # Docker refuses to start a container with more than the host has
+    mem_limit: 9g
+    shm_size: 1g
+
+  # Speech-to-text for voice control (the earpiece microphone). Runs on the CPU; short commands take about a second.
+  whisper:
+    profiles: [voice]
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    restart: unless-stopped
+    environment:
+      PRELOAD_MODELS: '["Systran/faster-distil-whisper-small.en"]'    # kept in memory once it is there; the copilot asks for the download (Settings tab, Test)
+    volumes:
+      - whisper:/home/ubuntu/.cache/huggingface/hub
+
+volumes:
+  data:       # laps, the database, settings.json (holds the tokens and keys: back it up with care)
+  shared:     # the phone's token and web view password, readable by both containers
+  phone:      # the Android SDK and the phone itself
+  whisper:    # the speech-to-text model
+
+networks:
+  # Only the phone is on this network, so it is only made with the phone profile and the rest of the stack starts on a
+  # host where Docker has no IPv6. The emulator needs an IPv6 address in its container: without one it cannot open its
+  # modem socket on ::1 and Android's radio service then uses a whole core for ever. The copilot reaches the phone on
+  # the default network.
+  phone6:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "fd00:6774:37::/64"
