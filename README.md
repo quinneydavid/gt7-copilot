@@ -1,18 +1,34 @@
 # GT7 Copilot
 
-GT7 Copilot listens to the telemetry that Gran Turismo 7 sends on the home network. It records every lap, works out where time is lost, and speaks short calls while the car is on track: braking points, fuel, pit laps, tyre temperatures. After a session it shows what the laps say about the driving and about the car's settings.
+GT7 Copilot is a self-hosted companion for Gran Turismo 7. It does four things:
+
+- **Spoken feedback while driving.** It reads the telemetry the game sends over the home network and calls out
+  where time was lost, lap times, fuel and tyre temperatures.
+- **Conversation while driving.** The driver can talk to the copilot in plain sentences and ask about the car,
+  the laps, fuel and settings.
+- **Lap analysis.** It records every lap and shows where time was lost, corner by corner.
+- **Car tuning from a screenshot.** It reads the car's settings from a picture of the game's Car Settings
+  screen and suggests which settings to change, based on how the driver's own laps went in that car.
+
+Gran Turismo 7 reports a lap time without showing where the time was gained or lost, and it gives no guidance
+on car setup. GT7 Copilot fills that gap using data the game already provides.
+
+It runs as one container on the home network. Nothing is installed on the console, and it needs no account or
+cloud service.
 
 ![The Live page while a car is on track: last call, lap, gap to the best lap, speed, fuel, tyre temperatures, the laps of the session and what the copilot said](docs/images/live.png)
 
-The pictures on this page show simulated demo data, not real driving. More of them are under [Pictures](#pictures).
+The pictures on this page show simulated demo data.
 
-It runs as one container. Voice control, reading settings screens from screenshots, an earpiece program for a sim PC or a Mac and a door for chat agents are optional parts, each switched on from the Settings tab of its page.
-
-An independent project. Not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital. See [Trademarks and credits](#trademarks-and-credits).
+An independent project, with no affiliation to or endorsement by Sony Interactive Entertainment or Polyphony
+Digital. See [Trademarks and credits](#trademarks-and-credits).
 
 ## Contents
 
-- [What it does](#what-it-does)
+- [Car tuning from a screenshot](#car-tuning-from-a-screenshot)
+- [While driving](#while-driving)
+- [Talking to the copilot](#talking-to-the-copilot)
+- [After a session](#after-a-session)
 - [Pictures](#pictures)
 - [What it needs](#what-it-needs)
 - [Quick start](#quick-start)
@@ -25,14 +41,72 @@ An independent project. Not affiliated with or endorsed by Sony Interactive Ente
 - [Development](#development)
 - [Trademarks and credits](#trademarks-and-credits)
 
-## What it does
+## Car tuning from a screenshot
 
-- **Records laps.** Sessions, laps, fuel use and a full trace per lap, from the console's own telemetry. Tracks are recognised by their outline and named from a set of 85 known layouts; one that is not in the set is named once by hand or from a screenshot.
-- **Speaks while driving.** Before a corner where time was lost: what to do. After it: what happened. Fuel and pit calls with a countdown, tyre temperature warnings, a summary at the end of a race. The calls are rules in code; no language model writes them. The voice is made locally (Kokoro).
-- **Shows the session.** Lap times, time lost per corner and the usual cause, speed traces against the best lap, how the car behaved (wheelspin, lock-ups, oversteer on entry or exit).
-- **Advises on settings.** From the car's behaviour and the settings sheet on file, it lists what to change, in the game's own words and order. It keeps a library of tunes with their source, and pairs each change with what the laps did next.
-- **Reads the settings screen.** A PS5 screenshot or a phone photo of the Car Settings screen is read by a vision model, checked against the game's limits and filed. Optional.
-- **Takes voice commands.** "Copilot, fuel", "Copilot, where am I losing time". Optional.
+The game's telemetry does not include the car's settings, so the copilot reads them from a picture.
+
+1. **Take a picture of the Car Settings screen.** A PS5 screenshot or a phone photo of the television both work.
+   It can be uploaded on the page, shared from the PlayStation App on Android, sent by an iPhone Shortcut,
+   dropped in a watched folder, or fetched automatically by the optional virtual phone.
+2. **A vision model reads the screen.** Tyres, suspension, differential, aerodynamics, ECU, ballast,
+   transmission, brake balance and fitted parts are read into a settings sheet. Every value is then checked
+   against what the game allows, and anything outside that range is refused.
+3. **Drive.** The copilot records how the car behaves in the driver's hands over the timed laps of a session:
+   wheelspin, lock-ups, understeer and oversteer on corner entry and exit, tyre temperatures.
+4. **It suggests a tune for that driver.** The suggestions come from those laps, so they fit how that driver
+   drives the car. The sheet is shown laid out like the game's own Car Settings screen, with each suggested
+   change marked and the reason given, for example "The front wheels lock under braking. Brakes, Front/Rear
+   Balance: -2 to -1." One change is proposed at a time.
+5. **It tracks the result.** After a change is made, the copilot pairs it with what the following laps did,
+   and keeps a library of tunes for each car.
+
+The vision model is any model at an OpenAI-compatible address, local (Ollama, vLLM) or hosted. The suggestions
+are worked out by rules from the telemetry and the sheet. Reading screenshots is an optional part; a sheet can
+also be filed by an agent or from the command line. Details in [docs/screenshots.md](docs/screenshots.md).
+
+![The suggested tune for a car: its settings sheet laid out like the game's Car Settings screen, with two changes marked in yellow](docs/images/tune.png)
+
+## While driving
+
+- **Corner feedback.** Before a corner where time was lost on the previous lap, it says what to do differently.
+  After the corner, it reports the result, for example "Turn one. You lost two tenths here."
+- **Lap times.** At the line it reads the lap time and the gap to the best lap.
+- **Fuel and pit stops.** Fuel remaining, laps of fuel left and a countdown to the pit lap.
+- **Tyres.** A warning when tyre temperatures leave their working range.
+- **Race summary.** A short summary at the end of a race.
+
+The calls are produced by rules from the driver's own laps, and the voice is generated locally (Kokoro).
+
+## Talking to the copilot
+
+The driver can speak to the copilot through the earpiece microphone and get a spoken answer.
+
+- **Plain sentences.** "How is the fuel?", "Is the fuel going to last?", "Where am I losing time?", "What
+  should I set the rear differential at?", "Is the rear too soft?" A language model works out what the
+  sentence means.
+- **No wake word on track.** While the car is on track the name "Copilot" can be left out. Off the track the
+  name is needed, so talk in the room is ignored.
+- **Answers from the driver's own data.** Fuel, lap times, settings and pit plans are answered with the app's
+  own figures. Open questions are answered by the model in a sentence or two.
+- **It remembers what it is told.** "I will pit on lap eight", "I'm staying lean" or "it's raining" are noted
+  for the session, and the fuel and pit calls follow.
+- **What it cannot see.** Weather, other cars, positions and tyre wear are outside the telemetry. When asked
+  about them, the copilot says so.
+
+This is an optional part. It needs the earpiece program, a speech-to-text service (the stack can run one) and a
+chat model at any OpenAI-compatible address, local or hosted. With the chat model off, a short list of fixed
+commands still works. Details in [docs/voice.md](docs/voice.md).
+
+## After a session
+
+- **Lap analysis.** Lap times, time lost per corner with the most frequent cause, and the speed trace of any
+  lap against the reference lap, on a map of the track.
+- **Ask (optional).** Questions in plain words ("what should I change next?"), answered from the recorded laps,
+  settings and tuning notes.
+- **History.** Every session, lap, car and track is kept. Tracks are recognised by their outline from a set of
+  85 known layouts; a track outside the set is named once by hand or from a screenshot.
+
+![A session at Tsukuba: seconds off the best per lap, time lost per corner, the track map, corner detail and a speed trace against the best lap](docs/images/session.png)
 
 ## Pictures
 
@@ -40,8 +114,7 @@ All from simulated demo data (`tools/demo`), with the simulated car on track.
 
 | | |
 |---|---|
-| [![The Sessions page: seven sessions by day, each with car, track, laps and best lap](docs/images/sessions.png)](docs/images/sessions.png) Every session, by day, with its best lap. | [![A session at Tsukuba: seconds off the best per lap, time lost per corner, the track map, corner detail and a speed trace against the best lap](docs/images/session.png)](docs/images/session.png) One session: where the time goes, corner by corner, and a lap against the best lap. |
-| [![The suggested tune for a car: its settings sheet laid out like the game's Car Settings screen, with two changes marked in yellow](docs/images/tune.png)](docs/images/tune.png) The settings sheet with the changes the laps ask for. | [![The Settings tab: console address, copilot voice and voice control groups](docs/images/settings.png)](docs/images/settings.png) The Settings tab. Keys are never shown. |
+| [![The Sessions page: seven sessions by day, each with car, track, laps and best lap](docs/images/sessions.png)](docs/images/sessions.png) Every session, by day, with its best lap. | [![The Settings tab: console address, copilot voice and voice control groups](docs/images/settings.png)](docs/images/settings.png) The Settings tab. Keys are never shown. |
 | [![The Ask panel open on a session page, with one question and its answer](docs/images/ask.png)](docs/images/ask.png) Ask, on a session page. The answer in this picture comes from a stand-in for the model. | [![The Home page on a phone: totals and what to change next](docs/images/phone.png)](docs/images/phone.png) The Home page on a phone. |
 
 ## What it needs
