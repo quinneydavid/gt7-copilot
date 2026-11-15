@@ -325,7 +325,7 @@ class Copilot:
         if enough:
             return "Copy. Lean. You have enough fuel, you could run rich."
         if 1 - o["need"] / o["per"] <= LEAN_MAX:
-            return f"Copy. Lean. Target {S.one_dp(o['need'])} a lap. You are using {S.one_dp(o['per'])}."
+            return f"Copy. Lean. Target {S.one_dp(self.pct(c, o['need']))} percent a lap. You are using {S.one_dp(self.pct(c, o['per']))}."
         return f"Copy. Lean will not cover it. You need a stop by the end of lap {S.words(max(o['lap'], o['reach']))}."
 
     def driver_plans_pit(self, c, lap_no, why="fuel"):

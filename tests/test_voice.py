@@ -147,6 +147,26 @@ ok(h("Copilot, what fuel map should I use?")["command"] == "fuel_map" and h("Cop
 ok(h("Copilot, did you get the screenshot?")["command"] == "chat" and not vo.busy, "a question about screenshots does not fetch one")
 ok(h("Copilot, how is the broken thing doing today")["command"] in ("unknown", "chat"), "a model that returns nothing usable falls back to the rules")
 ok(h("fuel")["command"] == "fuel" and not any(t == "fuel" for t, _, _ in routes), "one or two words stay with the instant rules")
+# 14 Nov race: "four laps left, half a tank" -> the model said "That's plenty" while the laps said short. Fuel talk now gets
+# the app's figures, whatever the model would have said.
+from gt7copilot.packet import C as _C
+_fuel_was = float(col.row[_C["fuel"]]); _o = co.outlook(col)
+col.row[_C["fuel"]] = _o["per"] * (_o["to_go"] - 1.5)                 # a lap and a half short
+ASK.route = lambda *a: dict(intent="chat", say="That's plenty, safe to finish.")
+for phrase in ("Copilot, I have half a tank.", "Copilot, it's only four laps left.", "Copilot, is that enough fuel to finish?"):
+    r = h(phrase); print("     ", r["reply"])
+    ok("plenty" not in r["reply"] and r["reply"].startswith("Fuel ") and ("Pit by" in r["reply"] or "Lean." in r["reply"]), f"fuel talk answered from the laps, not the model: {phrase}")
+r = h("Copilot, I'm so tired today"); ok(r["reply"] == "That's plenty, safe to finish.", "...other chat still gets the model's words")
+col.row[_C["fuel"]] = _o["per"] * (_o["to_go"] + 3)                   # plenty
+r = h("Copilot, it's only four laps left."); ok(r["reply"] == "That's plenty, safe to finish.", "'laps left' with fuel to spare is not taken as a fuel question")
+r = h("Copilot, I have half a tank."); print("     ", r["reply"]); ok(r["reply"].startswith("Fuel ") and "Rich." in r["reply"], "with fuel to spare: says so from the laps")
+ASK.route = fake_route
+_radio = ASK.radio; ASK.radio = lambda *a: "That's plenty."; _rt = ASK.route; del ASK.route
+_why = ASK.why_not; ASK.why_not = lambda: "off"
+col.row[_C["fuel"]] = _o["per"] * (_o["to_go"] - 1.5)
+r = h("Copilot, I have half a tank."); ok("plenty" not in (r["reply"] or "") and (r["reply"] or "").startswith("Fuel "), "without the router too (keyword rules, then chat)")
+ASK.radio = _radio; ASK.route = _rt; ASK.why_not = _why
+col.row[_C["fuel"]] = _fuel_was
 del ASK.route
 ASK.radio = lambda *a: None
 ok(h("Copilot, sing me a song")["reply"] == "Say again?" and h("can you sing me a song")["reply"] is None, "the model has nothing to say: 'Say again?' with the name, silence without")

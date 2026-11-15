@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.5
+- Anything said about fuel while driving ("I have half a tank", "only four laps left", "is that enough to finish") is answered from the laps, not by the chat model. The model had answered "That's plenty" when the laps said the fuel was short.
+- Every fuel answer ends with the same verdict as the fuel calls (rich, hold, lean with a target, or pit by lap N). The fuel read-out used its own, looser rule and could say "enough to finish" while the calls said otherwise.
+- "Copy. Lean." gives its target in percent too.
+
 ## 0.13.4
 - "Copilot, screenshot" reads every PS5 capture not read yet, not only the newest one. Taking two captures and saying "screenshot" once now files both.
 - Fuel is spoken in percent of the tank, as the game shows it (GT7's fuel figure is already out of 100; the calls said "litres"). A pit call now says how much to add and the level to fill to: "Take forty percent, fill to eighty-five."

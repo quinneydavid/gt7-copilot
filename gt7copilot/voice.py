@@ -206,6 +206,9 @@ class Voice:
 
     def _chat(self, text):
         """Not one of the fixed commands: let the Ask model answer it in a sentence or two (None = nothing to say)."""
+        fuel = self._fuel_talk(text)
+        if fuel:
+            return fuel
         try:
             live, now, hist = self._context()
             reply = ASK.radio(text, hist, live, now)
@@ -253,6 +256,9 @@ class Voice:
                 paths, end = asked_setting(ql)
                 return out("setting", self._setting(paths, end))
         if it == "chat":
+            fuel = self._fuel_talk(text)
+            if fuel:                                     # about fuel: the app's figures, never the model's own sums
+                return out("fuel", fuel)
             if not r.get("say"):
                 return None
             self.chat = (self.chat + [(time.time(), text, r["say"])])[-4:]
@@ -524,6 +530,37 @@ class Voice:
                 return ev["text"]
         return None
 
+    # Talk about fuel ("I have half a tank", "is that enough to finish", "only four laps left") is answered from the app's
+    # own figures. The model got it wrong on 14 Nov: "four laps left, half a tank" -> "That's plenty" while the laps said
+    # 0.6 laps short, and the driver had to stop again on the last lap.
+    FUEL_TALK = re.compile(r"\b(fuel|petrol|gas|tank|refuel\w*|fill(?:ed|ing)?(?: it)? up|top(?:ped)? up|enough to (?:finish|make it)|make it to the (?:end|finish|flag))\b")
+    LAPS_LEFT = re.compile(r"\b(\d+|" + "|".join(S.ONES[1:20]) + r") (?:more )?laps? (?:left|to go|remaining)\b")
+
+    def _fuel_talk(self, text):
+        """A sentence about fuel while driving -> the app's answer, or None when it is not about fuel."""
+        c, co = self.col, self.co
+        if not c.live or c.row is None:
+            return None
+        t = re.sub(r"[^a-z0-9' ]+", " ", (text or "").lower())
+        if re.search(r"\b(fuel (map|mix\w*)|lean|rich)\b", t):     # which map: the fuel-map answer and the driver's map stay as they are
+            return None
+        o = co.outlook(c)
+        m = self.LAPS_LEFT.search(t)
+        said = None
+        if m:
+            w = m.group(1); said = int(w) if w.isdigit() else S.ONES.index(w)
+        short = o and o["to_go"] is not None and o["left"] < o["to_go"] + 0.3
+        if not self.FUEL_TALK.search(t) and not (m and (short or (o and o["to_go"] is None))):
+            return None                                  # "four laps left" alone is about fuel only when fuel is the question
+        if o and o["to_go"] is None and said:            # no lap count from the game: use the laps the driver said
+            from .packet import C
+            per = co.pct(c, o["per"]); left = o["left"]
+            head = f"Fuel {S.words(co.pct(c, float(c.row[C['fuel']])))} percent, using {S.one_dp(per)} a lap. Good for {S.one_dp(left)} laps."
+            if left >= said + 0.3:
+                return f"{head} Enough for {S.words(said)}."
+            return f"{head} Not enough for {S.words(said)}. Pit by the end of lap {S.words(max(o['lap'], o['reach']))}."
+        return self._fuel()
+
     def _clean(self):
         return [l for l in self.col.session_laps if not l.get("pit")]
 
@@ -541,7 +578,7 @@ class Voice:
         msg = f"Fuel {S.words(self.co.pct(c, now))} percent. Using {S.one_dp(self.co.pct(c, per))} a lap. Good for {S.one_dp(left)} more laps."
         if total > 0 and c.lap_no:
             to_go = total - c.lap_no + 1
-            msg += f" {S.words(to_go).capitalize()} to go, this one included." + (" You need a stop." if left < to_go - 0.2 else " Enough to finish.")
+            msg += f" {S.words(to_go).capitalize()} to go, this one included. " + self.co.fuel_advice(c)    # one verdict for every fuel answer
         return msg
 
     def _tyres(self):
