@@ -86,6 +86,7 @@ td.r,th.r{text-align:right;padding-right:0}
 .empty b{display:block;color:var(--text2);font-size:16px;margin-bottom:4px}
 .note{font-size:13.5px;margin-top:8px}.note.ok{color:var(--good)}.note.bad{color:var(--crit)}
 .banner{border-left:3px solid var(--warn);margin-bottom:12px}
+tr.alt td{opacity:.72}.warnt{color:var(--warn)}
 .lookgrid{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:16px;align-items:start}.lookpic img{width:100%;border-radius:8px;display:block}
 @media (max-width:700px){.lookgrid{grid-template-columns:1fr}}
 input[type=text],input[type=search],input[type=password],input[type=number],select{padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
@@ -489,9 +490,9 @@ async function pageCar(r,alive){const code=+r.args[0],sub=r.args[1]||'overview',
       else{const rec=adv.recommended||[];
         if(adv.sheet_view)h+=gtSheet(adv.sheet_view,{title:'Suggested Settings',sub:rec.length?`Your sheet with ${plural(rec.length,'change')} marked in yellow. Everything else stays as it is.`:'Your sheet as saved. Nothing to change.',rec});
         else h+=`<div class="card banner">No settings sheet on file for this car, so the changes below have directions but no numbers. <a href="#screenshots">File the sheet from a screenshot.</a></div>`;
-        h+=`<div class="card gap"><h2>Why: what the car did</h2><div class="sub">Worked out from how the car behaved over ${adv.laps} timed laps, with the alternatives for each problem. Change one thing at a time.</div>
+        h+=`<div class="card gap"><h2>Why: what the car did</h2><div class="sub">Worked out from how the car behaved over ${adv.laps} timed laps. Only the rows marked “in the suggested sheet” are changes to make; the rest are alternatives, or were left out because they would make another problem worse.</div>
           ${(adv.items||[]).map((it,i)=>`<h3 style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15px;margin-top:${i?20:6}px">${i+1}. ${esc(it.problem)}</h3><div class="small mut">${it.evidence.map(esc).join(' · ')}</div>
-            <div class="scroll"><table><tr><th>Change</th><th>Now</th><th>Try</th><th>Why</th></tr>${it.fixes.map(f=>`<tr><td>${esc(f.game_setting||f.setting)}${f.needs_part?'<div class="small mut">needs: '+esc(f.needs_part)+'</div>':''}</td><td>${esc(f.now??'–')}</td><td>${f.to!=null?'<b>'+esc(f.to)+'</b>':esc(f.direction)+' by '+esc(f.step)}</td><td class="mut">${esc(f.why)}</td></tr>`).join('')}</table></div>
+            <div class="scroll"><table><tr><th>Change</th><th>Now</th><th>Try</th><th>Why</th></tr>${it.fixes.map(f=>`<tr${f.status==='suggested'?'':' class="alt"'}><td>${esc(f.game_setting||f.setting)}<div>${f.status==='suggested'?'<span class="pill good">in the suggested sheet</span>':`<span class="small ${f.status==='conflict'?'warnt':'mut'}">${esc(f.status_note||'')}</span>`}</div></td><td>${esc(f.now??'–')}</td><td>${f.to!=null?(f.status==='suggested'?'<b>'+esc(f.to)+'</b>':esc(f.to)):esc(f.direction)+' by '+esc(f.step)}</td><td class="mut">${esc(f.why)}</td></tr>`).join('')}</table></div>
             ${it.suspect_settings.length?`<div class="small" style="margin-top:6px"><b>On your sheet now and a likely cause:</b> ${it.suspect_settings.map(x=>esc(x.game_setting||x.setting)+' = '+esc(x.now)+' ('+esc(x.why)+')').join('; ')}</div>`:''}`).join('')||'<p class="mut" style="margin:0">Nothing on the car stands out. The time is in the driving.</p>'}
           ${(adv.parts||[]).length?`<h3 style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15px;margin-top:20px">Parts to fit first</h3><table><tr><th>Part</th><th>Needed for</th></tr>${adv.parts.map(p=>`<tr><td><b>${esc(p.part)}</b></td><td class="mut">${esc(p.unlocks)} (${esc(p.for_problem)})</td></tr>`).join('')}</table>`:''}
           ${(adv.notes||[]).map(x=>`<p class="small mut" style="margin:10px 0 0">${esc(x)}</p>`).join('')}</div>`}}}

@@ -98,6 +98,27 @@ def _tyres(sums, hs, sh, pitted):
     return None
 
 
+def label(items, rec):
+    """Mark each fix: suggested / conflict / needs_part / alternative, with a sentence (status_note)."""
+    # Every fix says where it stands against that one sheet, so a list of alternatives never reads like an instruction
+    # (15 Nov: rear anti-roll bar listed as 5 -> 6 for two problems and 5 -> 4 for two others, while the sheet left it alone).
+    for i in items:
+        for fx in i["fixes"]:
+            k = (fx.get("path"), fx.get("end"))
+            others = [j["problem"] for j in items if j is not i for g in j["fixes"]
+                      if (g.get("path"), g.get("end")) == k and g.get("direction") and fx.get("direction") and g["direction"] != fx["direction"]]
+            if k in rec and rec[k]["to"] == fx.get("to"):
+                fx.update(status="suggested", status_note="In the suggested sheet.")
+            elif fx.get("needs_part"):
+                fx.update(status="needs_part", status_note=f"Not in the suggested sheet: needs the {fx['needs_part']} fitted first.")
+            elif k in rec:
+                fx.update(status="conflict", status_note=f"Left out: the suggested sheet sets it to {rec[k]['to']} instead, for “{rec[k]['problem'].lower()}”.")
+            elif others:
+                fx.update(status="conflict", status_note=f"Left out: it would make “{others[0].lower()}” worse.")
+            else:
+                fx.update(status="alternative", status_note="Not in the suggested sheet. Try it if the suggested change is not enough.")
+
+
 def advise(sums, sh=None, meta=None, pitted=None):
     """sums: lap summaries of the timed laps of one session. -> dict(ready, items, parts, notes)."""
     pitted = any(s.get("pit") for s in sums) if pitted is None else pitted
@@ -252,6 +273,7 @@ def advise(sums, sh=None, meta=None, pitted=None):
                     if fx["why"] not in whys: whys.append(fx["why"])
         r["problems"] = probs
         r["reason"] = "; ".join(p[0].lower() + p[1:] if n else p for n, p in enumerate(probs)) + ". " + "; ".join(whys).capitalize() + "."
+    label(items[:4], rec)
     order = [r[0] for _, _, _, rows in S.LAYOUT for r in rows]
     recommended = sorted(rec.values(), key=lambda r: (order.index(r["path"]) if r["path"] in order else 99, r["end"] == "rear"))
     return dict(ready=True, laps=n, drive=drive, items=items[:4], parts=parts, recommended=recommended, notes=notes)

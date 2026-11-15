@@ -151,7 +151,8 @@ def _car(st, code, sid=None):
             change=[dict(setting=r["game_setting"], now=r["now"], to=r["to"], why=r.get("reason")) for r in adv.get("recommended") or []],
             problems=[dict(problem=i["problem"], evidence=i["evidence"],
                            alternatives=[dict(setting=f.get("game_setting") or f["setting"], now=f.get("now"), to=f.get("to"),
-                                              direction=None if f.get("to") is not None else f.get("direction"), why=f.get("why"), needs_part=f.get("needs_part")) for f in i["fixes"][:4]],
+                                              direction=None if f.get("to") is not None else f.get("direction"), why=f.get("why"), needs_part=f.get("needs_part"),
+                                              status=f.get("status_note")) for f in i["fixes"][:4]],
                            likely_cause_on_sheet=[dict(setting=x.get("game_setting") or x["setting"], now=x["now"], why=x["why"]) for x in i.get("suspect_settings", [])[:3]])
                       for i in adv.get("items", [])],
             parts_to_fit_first=adv.get("parts") or None, notes=adv.get("notes") or None)

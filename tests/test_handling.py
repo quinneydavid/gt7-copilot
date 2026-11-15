@@ -62,3 +62,15 @@ v = SH.view(sh2, [dict(path="suspension.anti_roll_bar", end="front", to=5, probl
 assert [x["section"] for x in v] == ["Tires", "Suspension", "Differential Gear", "Brakes"], v
 assert v[1]["rows"][0]["cells"][0] == dict(end="front", value="5", was="6", why="p") and v[0]["rows"][0]["cells"][1]["value"] == "Racing: Soft"
 print("PASS sheet view in the game's order")
+
+# 15 Nov: every fix says where it stands against the suggested sheet (the Focus Gr.B listed rear ARB both up and down)
+ARB = "suspension.anti_roll_bar"
+f = lambda path, end, d, to: dict(path=path, end=end, direction=d, to=to, game_setting=path, why="w")
+items = [dict(problem="The car pushes wide on the power", fixes=[f("differential.acceleration_sensitivity", "rear", "lower", 40), f(ARB, "rear", "raise", 6)]),
+         dict(problem="The rear comes round under braking", fixes=[f("brake_balance", None, "lower", -1), f(ARB, "rear", "lower", 4), f("aero.downforce", "rear", "raise", 270)])]
+rec = {("differential.acceleration_sensitivity", "rear"): dict(to=40, problem=items[0]["problem"]), ("brake_balance", None): dict(to=-1, problem=items[1]["problem"])}
+T.label(items, rec)
+st = [[x["status"] for x in i["fixes"]] for i in items]
+assert st == [["suggested", "conflict"], ["suggested", "conflict", "alternative"]], st
+assert "would make “the rear comes round under braking” worse" in items[0]["fixes"][1]["status_note"], items[0]["fixes"][1]
+print("PASS each fix says whether it is in the suggested sheet, an alternative, or left out because it fights another problem")

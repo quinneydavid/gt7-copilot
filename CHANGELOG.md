@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1
+- The suggested tune's "Why" list says, for every fix, whether it is in the suggested sheet, an alternative to try if that is not enough, or left out because it would make another problem worse. Before, it listed the rear anti-roll bar both up and down for different problems while the suggested sheet left it alone, which read like an instruction.
+- The chat sees the same labels, so it no longer offers a left-out change as the thing to do.
+
 ## 0.14.0
 - A settings screenshot is never thrown away over one number. A value outside the usual range is filed as read, and the reply says which one to check ("Please check: Suspension: Anti-Roll Bar (Front) read as 14"). Before, one odd value refused the whole page and the car kept its old settings.
 - Damping ratios are no longer limited to 20-40 (compression) and 30-50 (expansion). Some cars go further: the Focus Gr.B runs expansion 65.
