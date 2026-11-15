@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.4
+- "Copilot, screenshot" reads every PS5 capture not read yet, not only the newest one. Taking two captures and saying "screenshot" once now files both.
+- Fuel is spoken in percent of the tank, as the game shows it (GT7's fuel figure is already out of 100; the calls said "litres"). A pit call now says how much to add and the level to fill to: "Take forty percent, fill to eighty-five."
+- The chat may not call fuel anything but percent.
+- New SimHub page, and a rig check at the top of Live: before a race, one look shows the console, the earpiece and microphone, SimHub, game data, the USB motor board, the motors and the fans. Each is green, or says what is wrong ("COM3 has disappeared from Windows: the board is unplugged or lost power", "muted in SimHub"). The SimHub page also lists the board (name, port, connected since), the active motor profile with every effect switched on and its level, the fan settings, and how often SimHub lost the game's data in the last hour. Read-only: nothing changes SimHub.
+- Earpiece 0.4.0 reads this on the sim PC twice a minute: SimHub's saved settings (ShakeIt Motors, Wind), its log about the board, Windows' list of COM ports and SimHub's game data. Re-run the earpiece installer to get it.
+
 ## 0.13.3
 Page layout only.
 

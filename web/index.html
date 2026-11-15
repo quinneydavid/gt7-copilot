@@ -213,6 +213,10 @@ svg text{fill:var(--mut);font-size:11px;font-family:inherit}
 .set .help{color:var(--mut);font-size:13px;margin-top:2px}
 code{background:var(--surface2);border-radius:4px;padding:1px 5px;font-size:12.5px}
 details>summary{cursor:pointer;font-weight:600}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px 18px;margin-top:8px}
+.check{display:flex;gap:9px;align-items:flex-start;min-width:0}.check .dot{margin-top:6px}
+.check b{font-weight:600}.check .n{color:var(--text2);font-size:12px;overflow-wrap:anywhere}
+.gain{height:6px;border-radius:3px;background:var(--line);min-width:60px;overflow:hidden}.gain>i{display:block;height:100%;background:var(--s1)}
 </style>
 </head>
 <body>
@@ -225,6 +229,7 @@ details>summary{cursor:pointer;font-weight:600}
     <a href="#tracks" data-p="tracks">Tracks</a>
     <a href="#sessions" data-p="sessions">Sessions</a>
     <a href="#screenshots" data-p="screenshots">Screenshots</a>
+    <a href="#simhub" data-p="simhub">SimHub</a>
     <a href="#phone" data-p="phone" id="navPhone" hidden>Phone</a>
     <a href="#settings" data-p="settings">Settings</a>
   </nav>
@@ -237,6 +242,7 @@ details>summary{cursor:pointer;font-weight:600}
       <button class="btn primary" id="start">Start audio here</button><button class="btn" id="test">Test voice</button><button class="btn" id="mute">Mute copilot</button></div>
     <div class="card banner" id="needConsole" hidden>The console address is not set. Open <a href="#settings">Settings</a> and enter it.</div>
     <div class="card" style="margin-bottom:12px"><div class="sub" style="margin:0">Last call</div><div id="said">Press Start audio here to hear the calls in this browser, then drive.</div></div>
+    <div class="card" id="rigCard" style="margin-bottom:12px" hidden></div>
     <div class="grid tiles" id="liveTiles"></div>
     <div class="grid two gap">
       <div class="card"><h2>This session</h2><div class="sub" id="liveSub">No laps yet</div><div class="scroll"><table id="liveLaps"></table></div></div>
@@ -281,7 +287,7 @@ const head=(title,sub,crumb,right)=>`${crumb?`<div class="crumb">${crumb}</div>`
 const empty=(title,text)=>`<div class="card empty"><b>${title}</b>${text}</div>`;
 
 /* ================= router ================= */
-const PAGES={home:pageHome,live:null,cars:pageCars,tracks:pageTracks,sessions:pageSessions,screenshots:pageShots,phone:pagePhone,settings:pageSettings};
+const PAGES={home:pageHome,live:null,cars:pageCars,tracks:pageTracks,sessions:pageSessions,screenshots:pageShots,phone:pagePhone,simhub:pageSimhub,settings:pageSettings};
 const ALIAS={garage:'cars',tunes:'cars','':'home'};
 let ROUTE={page:'',args:[],q:new URLSearchParams()},seq=0;
 function parse(){const h=location.hash.replace(/^#/,''),[path,query]=h.split('?'),parts=path.split('/').filter(Boolean);
@@ -708,6 +714,68 @@ async function pageSettings(r,alive,d){d=d||await get('/api/settings');if(!alive
   if($('npwGo'))$('npwGo').onclick=async()=>{const x=await adminPost('/api/admin/password',{password:$('npw').value});const n=$('npwNote');n.className='note '+(x.signed_in?'ok':'bad');n.textContent=x.signed_in?'Password changed.':(x.error||'Not changed.')};
   if($('out'))$('out').onclick=async()=>{await adminPost('/api/admin/logout');ADMIN=false;route()}}
 
+/* ================= the rig check: everything that has to work before a race ================= */
+// From the state: the console, the earpiece, and what the earpiece reads from SimHub on the sim PC (its settings files,
+// its log about the USB board, its game data). Read-only: nothing here changes SimHub.
+const hhmm=t=>t?new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'–';
+function rigChecks(s){const out=[],add=(k,c,v,n)=>out.push({k,c,v,n:n||''}),ep=s.earpiece,rig=ep&&ep.rig,live=!!s.live;
+  const ps=s.console;
+  if(ps&&s.console_set!==false&&ps.power)add('PlayStation',{on:'on',rest:'warn',off:'bad'}[ps.power],{on:'On',rest:'Rest mode',off:'Off'}[ps.power],ps.power==='on'?(ps.game?'Gran Turismo 7 is sending data':'GT7 sends data once the car is on track'):'switch the console on');
+  if(!ep){add('Sim PC','bad','No report',s.earpiece_setup?'the earpiece on the sim PC is not running (is the PC on?)':'the earpiece is not set up');return out}
+  add('Earpiece',ep.airpod?'on':'bad',ep.airpod?'Connected':'Not connected',ep.airpod?esc(ep.device||''):'the AirPod is not connected to the sim PC');
+  if(ep.mic!=null)add('Microphone',ep.mic?'on':'warn',ep.mic?'Listening':'Off',ep.mic?'say “Copilot …”':'voice commands will not work');
+  const gt7=/gran\s*turismo\s*7|gt7/i.test(ep.simhub_game||'');
+  add('SimHub',!ep.simhub?'bad':ep.simhub_api===false||(ep.simhub_game&&!gt7)?'warn':'on',!ep.simhub?'Not running':ep.simhub_game&&!gt7?'Wrong game':'Running',!ep.simhub?'start SimHub on the sim PC':ep.simhub_game&&!gt7?'set to '+esc(ep.simhub_game)+': choose Gran Turismo 7':'set to Gran Turismo 7');
+  if(!ep.simhub)return out;
+  if(!rig||rig.error){add('Rig details','warn','Not reported',rig&&rig.error?esc(rig.error):'needs earpiece 0.4.0 on the sim PC');return out}
+  const stale=Date.now()/1000-(rig.at||0)>120,g=rig.game||{},L=rig.log||{},b=L.board,m=rig.motors,f=rig.fans;
+  if(g.running)add('Game data','on','Arriving',(g.speed!=null?Math.round(g.speed)+' km/h':'SimHub has the car')+(L.game&&L.game.drops_hour>3?' · dropped '+L.game.drops_hour+'× in the last hour':''));
+  else add('Game data',live?'bad':'','Waiting',live?'the car is on track but SimHub gets nothing: motors and fans stay still':'arrives when the car is on track');
+  if(!b)add('USB board','bad','Not connected','SimHub has not found the board since it started: check the USB cable and the board\'s power');
+  else if(rig.ports&&!(b.port in rig.ports))add('USB board','bad','Gone',esc(b.port)+' has disappeared from Windows: the board is unplugged or lost power');
+  else if((L.problems||[]).length)add('USB board','warn',esc(b.name),esc(L.problems[L.problems.length-1].text));
+  else add('USB board','on',esc(b.name),esc(b.port)+' · connected since '+hhmm(b.at));
+  if(m){const bad=!m.output.enabled?'the board output is switched off in ShakeIt Motors':m.muted?'muted in SimHub':!m.gain?'overall level is 0':!m.effects.length?'no effect is switched on':'';
+    add('Motors',bad?'bad':'on',bad?'Off':Math.round(m.gain)+'%',bad||esc(m.profile||'')+' · '+plural(m.effects.length,'effect')+' · '+plural(m.channels.length,'channel'))}
+  if(f){const bad=!f.enabled?'Wind is switched off in SimHub':!f.output.enabled?'the board output for the fans is off':!f.output.channels?'no fan channel is mapped':!f.gain?'overall level is 0':'';
+    add('Fans',bad?'bad':'on',bad?'Off':Math.round(f.gain)+'%',bad||(f.speed_wind?'with speed, full at '+Math.round(f.full_at_kmh)+' km/h':'')+(f.static_wind?' · steady breeze on':'')+' · '+plural(f.output.channels,'fan'))}
+  if(stale)out.forEach(x=>{if(['Game data','USB board','Motors','Fans'].includes(x.k)){x.c='warn';x.n+=' (last report '+ago(rig.at)+')'}});
+  return out}
+const checksHtml=cs=>'<div class="checks">'+cs.map(x=>`<div class="check"><span class="dot ${x.c}"></span><div><b>${esc(x.k)}</b> · ${x.v}<div class="n">${x.n}</div></div></div>`).join('')+'</div>';
+function rigSummary(cs){const bad=cs.filter(x=>x.c==='bad'),warn=cs.filter(x=>x.c==='warn');
+  return bad.length?`<span class="dot bad"></span> ${plural(bad.length,'thing')} to fix`:warn.length?`<span class="dot warn"></span> Ready, ${plural(warn.length,'thing')} to look at`:'<span class="dot on"></span> Ready to race'}
+function renderRigCard(s){const c=$('rigCard'),cs=rigChecks(s);c.hidden=!cs.length;if(!cs.length)return;
+  c.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0">${rigSummary(cs)}</h2><span class="spacer" style="flex:1"></span><a class="small" href="#simhub">SimHub details</a></div>`+checksHtml(cs)}
+
+async function pageSimhub(r,alive){
+  const draw=s=>{const ep=s.earpiece,rig=ep&&ep.rig,cs=rigChecks(s);
+    let h=head('SimHub','Motors, fans and the USB board on the sim PC, as SimHub reports them. Read-only: change things in SimHub itself.');
+    h+=`<div class="card" style="margin-bottom:12px"><h2 style="margin:0">${rigSummary(cs)}</h2>${checksHtml(cs)}</div>`;
+    if(!rig||rig.error){main().innerHTML=h+empty('No details from SimHub yet.',ep?'The earpiece on the sim PC sends them twice a minute from version 0.4.0. Re-run the earpiece installer from <a href="#settings">Settings</a>.':'The earpiece on the sim PC is not reporting. Is the PC on?');return}
+    const L=rig.log||{},b=L.board,m=rig.motors,f=rig.fans,g=rig.game||{},row=(k,v)=>`<tr><td class="mut">${k}</td><td>${v}</td></tr>`;
+    h+='<div class="grid two gap">';
+    h+=`<div class="card"><h2>USB board</h2><div class="sub">From SimHub's log${L.started?' · SimHub started '+hhmm(L.started):''}</div><table>`+
+      (b?row('Board',esc(b.name))+row('Port',esc(b.port)+(rig.ports?(b.port in rig.ports?' · present in Windows':' · <b>missing from Windows</b>'):''))+row('Speed',b.baud+' bps')+row('Connected',hhmm(b.at)):row('Board','<b>not connected</b> since SimHub started'))+
+      (L.perf?row('Last report',L.perf.sent+' packets sent, '+L.perf.failed+' failed ('+hhmm(L.perf.at)+')'):'')+
+      row('Problems',(L.problems||[]).length?L.problems.map(p=>hhmm(p.at)+' '+esc(p.text)).join('<br>'):'none since it connected')+
+      (rig.ports?row('COM ports',Object.keys(rig.ports).map(esc).join(', ')||'none'):'')+'</table></div>';
+    h+=`<div class="card"><h2>Game data</h2><div class="sub">What SimHub receives from Gran Turismo 7</div><table>`+
+      row('Game',esc(g.name||'–'))+row('Receiving',g.running?'yes'+(g.in_race?', in a race':'')+(g.paused?', paused':''):'no (normal when the car is not on track)')+
+      (g.speed!=null&&g.running?row('Speed',Math.round(g.speed)+' km/h'):'')+
+      row('Drop-outs',L.game?(L.game.drops_hour+' in the last hour'+(L.game.at?' · last change '+hhmm(L.game.at):'')):'–')+'</table>'+
+      `<p class="small mut" style="margin:10px 0 0">A drop-out is SimHub losing the game's data for a moment (menus, replays and pauses count too). Many of them while driving feel like the motors cutting out.</p></div>`;
+    if(m)h+=`<div class="card"><h2>Motors</h2><div class="sub">ShakeIt Motors · profile ${esc(m.profile||'–')} · saved ${m.saved?ago(m.saved):'–'}</div><table>`+
+      row('Overall level',Math.round(m.gain||0)+'%'+(m.muted?' · <b>muted</b>':''))+row('Output',esc(m.output.name||'')+(m.output.enabled?'':' · <b>off</b>'))+
+      row('Channels',m.channels.map(c=>`<span class="pill">${esc(c)}</span>`).join('')||'–')+'</table>'+
+      `<h3>Effects switched on</h3><table>${m.effects.map(e=>`<tr><td>${esc(e.name)}</td><td style="width:45%"><div class="gain"><i style="width:${Math.min(100,e.gain)}%"></i></div></td><td class="mut" style="text-align:right">${e.gain}%</td></tr>`).join('')||'<tr><td class="mut">none</td></tr>'}</table></div>`;
+    if(f)h+=`<div class="card"><h2>Fans</h2><div class="sub">Wind · profile ${esc(f.profile||'–')} · saved ${f.saved?ago(f.saved):'–'}</div><table>`+
+      row('Wind',f.enabled?'on':'<b>off</b>')+row('Overall level',Math.round(f.gain||0)+'%')+row('Output',(f.output.enabled?'board':'<b>off</b>')+' · '+plural(f.output.channels,'fan'))+
+      row('With speed',f.speed_wind?`on · ${Math.round(f.min_gain||0)}% to ${Math.round(f.max_gain||0)}%, full at ${Math.round(f.full_at_kmh||0)} km/h`:'off')+row('Steady breeze',f.static_wind?'on':'off')+'</table></div>';
+    h+='</div><p class="small mut">Settings are shown as SimHub last saved them; a change made in SimHub a moment ago shows once SimHub saves it. Updated '+ago(rig.at)+'.</p>';
+    main().innerHTML=h};
+  draw(await get('/api/state'));
+  while(alive()){await sleep(10000);if(!alive())return;try{draw(await get('/api/state'))}catch(e){}}}
+
 /* ================= live: audio + telemetry ================= */
 let armed=false,playing=false,queue=[],enabled=true;
 function speakFallback(t){try{speechSynthesis.speak(new SpeechSynthesisUtterance(t))}catch(e){}}
@@ -729,6 +797,7 @@ function renderLive(s){const n=s.now,tr=s.track,big=x=>`<span class="big">${x}</
   $('liveChip').innerHTML=`<span class="dot ${s.live?'on':''}"></span><span class="lbl">${s.live?'On track'+(tr&&tr.name?' · '+esc(tr.name):''):'Idle'}</span>`;
   $('navPhone').hidden=!s.phone_on;askReady=!!s.ask;$('askBtn').hidden=!askReady||!$('askPanel').hidden;
   if($('p-live').hidden)return;
+  renderRigCard(s);
   const d=s.delta,dTxt=d==null?'–':sgn(d),dNote=d==null?'needs a best lap on this track':(d<=0?'▲ ahead of your best':'▼ behind your best');
   let h=tile('Status',big(`<span class="dot ${s.live?'on':''}"></span> ${s.live?'On track':'Idle'}`),s.live?'telemetry arriving':'waiting for the car to be on track');
   h+=tile('Car',s.car?big(`<a href="#cars/${s.car}" style="color:inherit">${esc(s.car_name||('Car '+s.car))}</a>`):'–',s.tune&&s.tune.on_file?'settings sheet on file':(s.car?'no settings sheet on file':''));

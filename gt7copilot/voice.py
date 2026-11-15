@@ -190,7 +190,7 @@ class Voice:
         if c.live and c.row is not None:
             from .packet import C
             o = self.co.outlook(c) or {}
-            now = dict(lap=c.lap_no, total_laps=c.meta.get("total_laps") or None, fuel=round(float(c.row[C["fuel"]]), 1),
+            now = dict(lap=c.lap_no, total_laps=c.meta.get("total_laps") or None, fuel_percent_of_tank=round(self.co.pct(c, float(c.row[C["fuel"]])), 1),
                        fuel_per_lap=o.get("per") and round(o["per"], 2), laps_of_fuel_left=o.get("left") and round(o["left"], 1),
                        laps_to_go_including_this=o.get("to_go"), fuel_needed_per_lap_to_finish=o.get("need") and round(o["need"], 2),
                        gap_to_best_lap_s=self.co.delta, driver_says_fuel_map=self.co.driver_map,
@@ -513,15 +513,9 @@ class Voice:
         return dict(ok=True, reply="Reading the new screenshots. About a quarter of a minute each.")
 
     def take(self):
-        """The spoken command: fetch the newest PS5 capture in the background and say the result."""
-        why = CFG.why_not("screenshots") or CFG.why_not("phone")
-        if why:
-            return why
-        if self.busy:
-            return "Still reading the last one."
-        fetch = (lambda: self.inbox.submit(None, "phone", speak=False)) if self.inbox else self.shot
-        threading.Thread(target=lambda: self.say(fetch()["reply"], 60.0, "voice"), daemon=True).start()
-        return "Fetching the screenshot. Give me half a minute."
+        """The spoken command: read every PS5 capture not read yet (the one or more just taken) in the background and say
+        the result. Seen 14 Nov: two captures, "screenshot", only the newest was read."""
+        return self.read_new(speak=True)["reply"]
 
     # ---- answers ---------------------------------------------------------------------------------------------------
     def _last(self):
@@ -541,10 +535,10 @@ class Voice:
         now = float(c.row[C["fuel"]])
         used = [l["fuel_start"] - l["fuel_end"] for l in self._clean()[-3:] if l["fuel_start"] - l["fuel_end"] > 0.05]
         if not used:
-            return f"Fuel {S.words(now)}. No lap done yet, so no rate."
+            return f"Fuel {S.words(self.co.pct(c, now))} percent. No lap done yet, so no rate."
         per = sum(used) / len(used); left = now / per
         total = c.meta.get("total_laps") or 0
-        msg = f"Fuel {S.words(now)}. Using {S.one_dp(per)} a lap. Good for {S.one_dp(left)} more laps."
+        msg = f"Fuel {S.words(self.co.pct(c, now))} percent. Using {S.one_dp(self.co.pct(c, per))} a lap. Good for {S.one_dp(left)} more laps."
         if total > 0 and c.lap_no:
             to_go = total - c.lap_no + 1
             msg += f" {S.words(to_go).capitalize()} to go, this one included." + (" You need a stop." if left < to_go - 0.2 else " Enough to finish.")

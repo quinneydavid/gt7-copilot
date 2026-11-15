@@ -105,7 +105,7 @@ hub.publish(dict(type="say", text="Turn seven. Exit ten kilometres an hour faste
 ok(h("Turn seven. Exit ten kilometres an hour faster")["command"] is None and h("Turn 7, exit 10 km an hour faster.")["command"] is None, "driving: the copilot's own call coming back is ignored")
 asked = []
 ASK.radio = lambda text, hist, live, now: (asked.append((text, hist, now)), "It is twenty past nine.")[1]
-r = h("What time is it?"); ok(r["command"] == "chat" and r["reply"] == "It is twenty past nine." and asked[-1][2] and "fuel" in asked[-1][2], "driving: an open question is answered by the model, with the car's state")
+r = h("What time is it?"); ok(r["command"] == "chat" and r["reply"] == "It is twenty past nine." and asked[-1][2] and "fuel_percent_of_tank" in asked[-1][2], "driving: an open question is answered by the model, with the car's state")
 r = h("Copilot, is this car faster than my Ferrari?"); ok(r["command"] == "chat" and asked[-1][1] and asked[-1][1][-1][0] == "What time is it?", "with the name too, and it knows what was just said")
 r = h("Hey, what car do you recommend we take on this track next?"); ok(r["command"] == "chat", "driving: 'hey, what car do you recommend on this track' goes to the model")
 ASK.why_not = lambda: None
@@ -167,8 +167,8 @@ r = h("Copilot, I'm going to pit in two laps"); print("     ", r["reply"]); ok(r
 r = h("Copilot, how's the track?"); print("     ", r["reply"]); ok(r["command"] == "track" and "corners" in r["reply"], "how's the track: what is known about it")
 ok(h("Copilot, fuel")["command"] == "fuel" and h("Copilot tyres")["command"] == "tyres" and h("Copilot how many laps left")["command"] == "lap", "plain questions are unchanged")
 r = h("Copilot where am I losing time"); print("     ", r["reply"]); ok(r["command"] == "corners", "where the time goes")
-V.CAP.take = lambda col, store, log, image=None, kept=None: "Sheet filed for the test car."
-r = h("Copilot, take a screenshot"); ok(r["command"] == "captures" and r["reply"].startswith("Fetching the screenshot"), "take a screenshot starts the fetch")
+V.CAP.take_new = lambda col, store, log, back=False, progress=None: dict(ok=True, reply="Sheet filed for the test car.", shots=[], read=1, cars=[])
+r = h("Copilot, take a screenshot"); ok(r["command"] == "captures" and r["reply"].startswith("Reading the new screenshots"), "take a screenshot reads every new capture")
 import time; time.sleep(0.3); ok(("voice", "Sheet filed for the test car.") in said, "...and the result is spoken when it is done")
 ok(h("Copilot sing me a song")["reply"] == "Say again?", "an unknown command asks again")
 

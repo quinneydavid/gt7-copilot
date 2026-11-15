@@ -31,7 +31,7 @@ belong to the user's session there. Written from the documentation; not yet run 
 `--home DIR` says where the config lives."""
 import io, json, logging, logging.handlers, os, queue, subprocess, sys, threading, time, urllib.error, urllib.request, wave
 
-VERSION = "0.3.4"
+VERSION = "0.4.0"
 MAC = sys.platform == "darwin"
 HOME = os.environ.get("GT7C_EARPIECE_HOME") or (os.path.expanduser("~/Library/Application Support/GT7Copilot") if MAC else
                                                 os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "GT7Copilot"))
@@ -74,6 +74,158 @@ def request(cfg, path, body=None, timeout=10, raw=None):
     req = urllib.request.Request(cfg["url"] + path, data=data,
                                  headers={HEADER: cfg["token"], "Content-Type": "audio/wav" if raw is not None else "application/json"})
     return urllib.request.urlopen(req, timeout=timeout)
+
+
+# ---------------------------------------------------------------- SimHub rig check (motors, fans, the board)
+# Read-only: what SimHub saved in its settings files, what its log says about the USB board, and whether game data
+# reaches it. Nothing here changes SimHub. Plain functions on file paths, so they can be tested away from Windows.
+
+import re as _re
+
+_LOG_LINE = _re.compile(r"^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)[,.]\d+\] (\w+) - (.*)")
+_BOARD_UP = _re.compile(r"Connected to device on (COM\d+) named (.+?) \(@(\d+)bps\)")
+_BOARD_PERF = _re.compile(r"Arduino performance report for (.+?)@(COM\d+) : .*?SentDatagramsCount = (\d+), FailedCount = (\d+)")
+_BOARD_BAD = _re.compile(r"(disconnect|lost|unable|cannot|could not|denied|timeout|timed out|not found|failed)", _re.I)
+
+
+def _when(text):
+    try:
+        return time.mktime(time.strptime(text, "%Y-%m-%d %H:%M:%S"))
+    except Exception:
+        return None
+
+
+def simhub_log(path, now=None, tail=600_000):
+    """The board and the game as SimHub's own log tells it (the last part of Logs/SimHub.txt) -> dict:
+    started (SimHub's start), board {port, name, baud, at}, problems [{at, text}] about the board since it connected,
+    perf {sent, failed, at} (SimHub writes this when it stops), game {connected, at, drops_hour}."""
+    now = now or time.time()
+    out = dict(started=None, board=None, problems=[], perf=None, game=dict(connected=None, at=None, drops_hour=0))
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2); size = f.tell(); f.seek(max(0, size - tail))
+            text = f.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        m = _LOG_LINE.match(line)
+        if not m:
+            continue
+        at, level, msg = _when(m.group(1)), m.group(2), m.group(3)
+        if msg.startswith("Creating plugin manager"):                   # SimHub started: what came before is old news
+            out.update(started=at, board=None, problems=[], perf=None)
+            out["game"].update(connected=None, at=None)
+        elif (b := _BOARD_UP.search(msg)):
+            out["board"] = dict(port=b.group(1), name=b.group(2), baud=int(b.group(3)), at=at); out["problems"] = []
+        elif (b := _BOARD_PERF.search(msg)):
+            out["perf"] = dict(sent=int(b.group(3)), failed=int(b.group(4)), at=at)
+        elif msg.startswith("Game connected"):
+            out["game"].update(connected=True, at=at)
+        elif msg.startswith("Game disconnected"):
+            out["game"].update(connected=False, at=at)
+            if at and now - at < 3600:
+                out["game"]["drops_hour"] += 1
+        elif out["board"] and _BOARD_BAD.search(msg) and (out["board"]["port"] in msg or "arduino" in msg.lower() or "serial" in msg.lower()):
+            out["problems"] = (out["problems"] + [dict(at=at, text=msg[:200])])[-5:]
+    return out
+
+
+def _load(path):
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            return json.load(f), os.path.getmtime(path)
+    except (OSError, ValueError):
+        return None, None
+
+
+def _active(d, game="granturismo7"):
+    profs = d.get("Profiles") or []
+    want = d.get("activeProfileId") or (d.get("LastGameProfiles") or {}).get(game)
+    return next((p for p in profs if p.get("ProfileId") == want), profs[0] if profs else {})
+
+
+def _effect_name(t):
+    t = _re.sub(r"(Effect)?Container$", "", t or "")
+    return _re.sub(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ", t).replace("Gforce", "G-force").strip()
+
+
+def _channels(store):
+    """'0;0;100;Front Left;;|1;...' -> {0: 'Front Left', ...} (only named channels)."""
+    out = {}
+    for part in (store or "").split("|"):
+        f = part.split(";")
+        if len(f) >= 4 and f[0].isdigit() and f[3].strip():
+            out[int(f[0])] = f[3].strip()
+    return out
+
+
+def simhub_motors(path):
+    """ShakeIt Motors as SimHub last saved it: the active profile, its effects, the board output, the channel names."""
+    d, saved = _load(path)
+    if not d:
+        return None
+    prof = _active(d); ard = ((d.get("OutputManager") or {}).get("ArduinoSettings")) or {}
+    gain = prof.get("GlobalGain") if prof.get("UseProfileGain") else d.get("GlobalGain")
+    named = _channels((((ard.get("GlobalChannelsSettings") or {}).get("Custom")) or {}).get("MapsStore"))
+    return dict(saved=saved, profile=prof.get("Name"), muted=bool(d.get("IsMuted")), gain=gain,
+                output=dict(name=ard.get("Name"), enabled=bool(ard.get("IsEnabled")) and not ard.get("ArduinoPluginDisabled"),
+                            channels=ard.get("MaxChannels")),
+                channels=[named[k] for k in sorted(named)],
+                effects=[dict(name=_effect_name(c.get("ContainerType")), gain=round(float(c.get("Gain") or 0)))
+                         for c in prof.get("EffectsContainers") or [] if c.get("IsEnabled")])
+
+
+def simhub_fans(path):
+    """Wind (the fans) as SimHub last saved it."""
+    d, saved = _load(path)
+    if not d:
+        return None
+    prof = _active(d); ard = ((d.get("OutputSettings") or {}).get("ArduinoOutput")) or {}
+    dyn = prof.get("DynamicWindSettings") or {}; st = prof.get("StaticWindSettings") or {}
+    return dict(saved=saved, enabled=bool(d.get("IsEnabled")), profile=prof.get("Name"), gain=prof.get("GlobalGain"),
+                output=dict(enabled=bool(ard.get("IsEnabled")), channels=sum(1 for c in ard.get("ChannelMappings") or [] if c.get("Role"))),
+                speed_wind=bool(dyn.get("IsEnabled")), full_at_kmh=dyn.get("MaximumSpeed"), min_gain=dyn.get("MinGain"), max_gain=dyn.get("MaxGain"),
+                static_wind=bool(st.get("IsEnabled")) and bool(st.get("IsActive")))
+
+
+def serial_ports():
+    """COM ports Windows has right now (USB serial boards appear and disappear here): {'COM3': '\\Device\\USBSER000'}."""
+    try:
+        import winreg
+    except ImportError:
+        return None
+    out = {}
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DEVICEMAP\SERIALCOMM") as k:
+            i = 0
+            while True:
+                try:
+                    dev, port, _ = winreg.EnumValue(k, i)
+                except OSError:
+                    break
+                out[str(port)] = str(dev); i += 1
+    except OSError:
+        pass
+    return out
+
+
+def simhub_rig(simhub_dir, api=None, ports=None, now=None):
+    """Everything the rig check shows, in one small dict for the server."""
+    common = os.path.join(simhub_dir, "PluginsData", "Common")
+    out = dict(at=now or time.time(), log=simhub_log(os.path.join(simhub_dir, "Logs", "SimHub.txt"), now),
+               motors=simhub_motors(os.path.join(common, "ShakeITMotorsSettingsV2.json")),
+               fans=simhub_fans(os.path.join(common, "WindSettings.json")),
+               ports=serial_ports() if ports is None else ports, game=None)
+    if api:
+        try:
+            with urllib.request.urlopen(api.rstrip("/") + "/Api/GetGameData", timeout=2) as r:
+                g = json.loads(r.read().decode("utf-8", "replace"))
+            nd = g.get("NewData") or {}
+            out["game"] = dict(name=g.get("GameName"), running=bool(g.get("GameRunning")), in_race=bool(g.get("IsGameInRace")),
+                               paused=bool(g.get("GamePaused")), speed=nd.get("SpeedKmh"))
+        except Exception:
+            pass
+    return out
 
 
 # ---------------------------------------------------------------- Windows: audio device, Bluetooth, SimHub
@@ -207,6 +359,10 @@ class WindowsPC:
     def simhub_running(self):
         import psutil
         return any((p.info["name"] or "").lower() == "simhubwpf.exe" for p in psutil.process_iter(["name"]))
+
+    def rig(self):
+        """The rig check: SimHub's motors, fans, USB board and game data (read-only)."""
+        return simhub_rig(os.path.dirname(self.cfg["simhub_path"]), self.cfg.get("simhub_api"))
 
     def simhub_detail(self):
         """What SimHub itself says through its local web API: {"game": the game it is set to, "data": True when it is
@@ -636,6 +792,10 @@ class Earpiece:
             self.diag_at, self.diag_state = time.time(), rep["airpod"]
             try: rep["diag"] = doctor(self.cfg, self.pc, server=False)[:6000]
             except Exception as e: rep["diag"] = f"doctor failed: {type(e).__name__}: {e}"
+        if hasattr(self.pc, "rig") and time.time() - getattr(self, "rig_at", 0.0) > 30:     # the rig check, twice a minute
+            self.rig_at = time.time()
+            try: rep["rig"] = self.pc.rig()
+            except Exception as e: rep["rig"] = dict(error=f"{type(e).__name__}: {e}")
         rep["played"], rep["skipped"] = self.played, self.skipped
         try:
             request(self.cfg, "/api/earpiece", rep).read()

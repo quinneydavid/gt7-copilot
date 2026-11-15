@@ -198,6 +198,19 @@ class Copilot:
         except Exception as e:
             self.log(f"tune advice failed: {e!r}")
 
+    @staticmethod
+    def pct(c, v):
+        """Fuel figure -> percent of the tank, which is what GT7 shows. Petrol cars report a tank of 100, so the figure
+        already is a percentage; an electric car reports 0 (its figure is the charge, also out of 100)."""
+        cap = float(c.meta.get("fuel_cap") or 0)
+        return v * 100.0 / cap if cap > 0 else v
+
+    def _take(self, c, take, fill):
+        """How much to add at the stop, and the level to fill to, both in percent of the tank (14 Nov 2026: "take sixty
+        eight litres" was hard to match to the game's percent gauge, the driver put in too little)."""
+        to = min(100, math.ceil(self.pct(c, fill) / 5) * 5)
+        return f"Take {S.words(math.ceil(self.pct(c, take)))} percent, fill to {S.words(to)}."
+
     def _fuel(self, c, lap):
         """Fuel strategy at the line: lean when that gets you home without a stop, pit (and push) when it cannot,
         rich again when there is fuel to spare. Per-lap use is measured from the laps, pit laps left out."""
@@ -236,7 +249,7 @@ class Copilot:
                 self.fuel_plan = "pit"
                 if self.pit_plan == lap["lap_no"] + 1:
                     self.pit_due = True
-                    return f"Pit this lap, as you planned. Take {S.words(take)} litres."
+                    return f"Pit this lap, as you planned. {self._take(c, take, (to_go - 1 + 0.3) * per)}"
                 return f"Fuel is fine until your stop on lap {S.words(self.pit_plan)}."
             else:
                 self.pit_plan = None; self.fuel_plan = None
@@ -247,8 +260,8 @@ class Copilot:
                 self.fuel_plan = "lean"
                 short = round(to_go - left, 1)
                 return (f"Fuel is short by {S.one_dp(short)} {'lap' if short == 1 else 'laps'}. Go lean now to finish without a stop. "
-                        f"Target {S.one_dp(need)} per lap. You are using {S.one_dp(per)}.")
-            return f"Still over on fuel. Last lap {S.one_dp(used[-1])}, target {S.one_dp(need)}. Leaner map, or lift earlier."
+                        f"Target {S.one_dp(self.pct(c, need))} percent a lap. You are using {S.one_dp(self.pct(c, per))}.")
+            return f"Still over on fuel. Last lap {S.one_dp(self.pct(c, used[-1]))} percent, target {S.one_dp(self.pct(c, need))}. Leaner map, or lift earlier."
         # A stop is needed. Say so EVERY lap, as a countdown, and say plainly which lap (real race, 11 Nov 2026: it said
         # "pit by lap eight" twice and then nothing on the lap of the stop).
         can = int(left - 0.3)                            # full laps safely left in the tank, counting this one
@@ -257,11 +270,12 @@ class Copilot:
         lead = "Saving will not cover it. Stay rich and push. " if first else ""
         if can <= 1:
             self.pit_due = True
-            return (f"Pit this lap for fuel. Take {S.words(take)} litres." if left >= 1.0 else
-                    f"Fuel will not last the lap. Save fuel and pit this lap. Take {S.words(take)} litres.")
+            fill = (to_go - 1 + 0.3) * per                 # the level after the stop: the laps behind it, plus a margin
+            return (f"Pit this lap for fuel. {self._take(c, take, fill)}" if left >= 1.0 else
+                    f"Fuel will not last the lap. Save fuel and pit this lap. {self._take(c, take, fill)}")
         if can == 2:
-            return f"{lead}Pit next lap for fuel. Take {S.words(take)} litres."
-        return f"{lead}Pit in {S.words(can - 1)} laps, at the end of lap {S.words(lap['lap_no'] + can)}. Take {S.words(take)} litres."
+            return f"{lead}Pit next lap for fuel. {self._take(c, take, (to_go - 2 + 0.3) * per)}"
+        return f"{lead}Pit in {S.words(can - 1)} laps, at the end of lap {S.words(lap['lap_no'] + can)}. {self._take(c, take, (to_go - can + 0.3) * per)}"
 
     def outlook(self, c):
         """Where the fuel stands right now, for answers to the driver: dict(per, left, to_go, need, reach) or None before
@@ -287,13 +301,13 @@ class Copilot:
         if not o:
             return "No lap measured yet. Start on the rich map. I will tell you after lap one."
         if o["to_go"] is None:
-            return f"No lap count here. You are using {S.one_dp(o['per'])} a lap, good for {S.one_dp(o['left'])} laps."
+            return f"No lap count here. You are using {S.one_dp(self.pct(c, o['per']))} percent a lap, good for {S.one_dp(o['left'])} laps."
         if o["left"] >= o["to_go"] + 1.0:
             return f"Rich. You have {S.one_dp(o['left'] - o['to_go'])} laps of fuel to spare."
         if o["left"] >= o["to_go"] + 0.3:
             return "Hold what you have. The fuel is just enough to finish."
         if 1 - o["need"] / o["per"] <= LEAN_MAX and self.driver_map != "rich":
-            return f"Lean. Target {S.one_dp(o['need'])} a lap to finish without a stop. You are using {S.one_dp(o['per'])}."
+            return f"Lean. Target {S.one_dp(self.pct(c, o['need']))} percent a lap to finish without a stop. You are using {S.one_dp(self.pct(c, o['per']))}."
         return f"Rich, and stop. Saving will not cover it. Pit by the end of lap {S.words(max(o['lap'], o['reach']))}."
 
     def driver_says_map(self, c, which):

@@ -365,7 +365,8 @@ def serve(port, hub, get_state, say, set_enabled, hear=None, hear_text=None, sho
                     if body.get("diag"): diag.update(text=str(body["diag"])[:6000], at=time.time())
                 except Exception:
                     return self._send(400, '{"error":"bad report"}')
-                earpiece.clear(); earpiece.update(keep, seen=time.time())
+                rig = body.get("rig") if isinstance(body.get("rig"), dict) else earpiece.get("rig")   # sent twice a minute, kept between
+                earpiece.clear(); earpiece.update(keep, seen=time.time(), rig=rig)
                 return self._send(200, '{"ok":true}')
             if path == "/api/hear":                 # something the driver said into the earpiece (a WAV from the PC earpiece)
                 if earpiece_ok(self.headers) is not True:
