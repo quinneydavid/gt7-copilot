@@ -51,6 +51,7 @@ First see what is switched on: `gt7copilot features`. Each part has `ready` and,
 ```
 gt7copilot ask "where am I losing time?"   # the page's chat: an answer in words from the driver's laps and settings (needs Ask switched on)
 gt7copilot shot-file /tmp/photo.jpg    # a picture the driver sent in the chat: save the attachment to a file first. PS5 screenshot or phone photo, JPEG / PNG / WebP
+gt7copilot shot-reread 36              # read a kept screenshot again (after a fix); a value outside the usual range is filed and flagged "check", the car page asks the driver
 gt7copilot shot                        # only when phone.ready: fetch the newest PS5 capture (about half a minute)
 ```
 
@@ -122,3 +123,5 @@ A row without a source is refused. Do not add what you merely believe.
 - "The agent door is turned off in Settings" or "bad or missing token": the driver has to switch the agent door on, or give you the current token.
 - `gt7copilot status` shows whether the collector hears the console. "Idle" while the car is on track = telemetry is not arriving: tell the driver, do not guess.
 - An `error` in any answer: read it out; do not retry with invented arguments.
+
+**tune-set replaces the whole sheet.** Start from the newest sheet in `tune-show` and change only what you need; its answer lists `dropped_from_previous_sheet` and `pages_missing`. A screenshot, by contrast, adds its page to the sheet on file, so page 1 and page 2 may come from different screenshots.

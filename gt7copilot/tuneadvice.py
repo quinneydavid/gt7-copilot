@@ -41,8 +41,8 @@ def _fix(sh, path, end, delta, why):
     if cur is not None:
         new = cur * (1 + step / 100) if pct else cur + step
         lo, hi = S.LIMITS.get(path, (None, None))
-        if lo is not None:
-            new = min(hi, max(lo, new))
+        if lo is not None:                                # stop at the usual range, never move against the step
+            new = min(max(hi, cur), new) if step > 0 else max(min(lo, cur), new)
         new = round(new) if pct or float(step).is_integer() else round(new, 2)
         if new == cur:
             return None                                   # already at the limit

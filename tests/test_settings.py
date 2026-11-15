@@ -8,7 +8,7 @@ for k in [k for k in os.environ if k.startswith("GT7C_")]:
 os.environ.update(GT7C_DATA=tmp, GT7C_PS5="192.0.2.10", GT7C_MAX_CALLS="5", GT7C_GRAB_TOKEN_FILE=os.path.join(tmp, "shared", "grab-token"))
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0] = [ROOT, os.path.join(ROOT, "tests")]
-from gt7copilot import capture as CAP, checks, cli, library as L, server, settings as CFG, voice as V
+from gt7copilot import api, capture as CAP, checks, cli, library as L, server, settings as CFG, voice as V
 from gt7copilot.collector import Collector
 from gt7copilot.copilot import Copilot
 from gt7copilot.store import Store
@@ -44,7 +44,7 @@ ok(vo.handle("Copilot, help")["command"] is None, "...and the old name is no lon
 # ---- over HTTP -----------------------------------------------------------------------------------------------------------
 PORT = 18771; URL = f"http://127.0.0.1:{PORT}"
 hub = server.Hub(); col = vo.col
-server.serve(PORT, hub, lambda: dict(live=False), lambda *a: None, lambda on: None, hear=vo.hear, hear_text=vo.hear_text, shot=vo.shot,
+server.serve(PORT, hub, lambda: dict(live=False), lambda *a: None, lambda on: None, hear=vo.hear, hear_text=vo.hear_text, shot=vo.shot, reader=vo,
              tests=dict(vision=lambda body: checks.vision(), phone=lambda body: checks.phone(), whisper=lambda body: checks.whisper()))
 jar = {}
 def call(path, body=None, headers=None, raw=None):
@@ -148,7 +148,20 @@ car = cli.car_find("180SX Type X")[0]["code"]; t = L.current_tune(Store(), car)
 ok(t and t["sheet"]["suspension"]["anti_roll_bar"] == [4, 5] and t["sheet"]["suspension"]["toe_deg"] == [0, 0.2] and t["sheet"]["weight_kg"] == 1220, "the filed sheet holds what was read")
 st, d = call("/api/screenshot", raw=b"\xff\xd8\xff" + b"x" * 64); ok(d["reply"].startswith("Same sheet as before"), "the same screen again changes nothing")
 PAGE1["sheet"]["suspension"]["anti_roll_bar"] = [14, 5]
-st, d = call("/api/screenshot", raw=b"\xff\xd8\xff" + b"x" * 64); ok(st == 409 and "could not read that sheet cleanly" in d["reply"], "a value the game does not allow is not filed")
+st, d = call("/api/screenshot", raw=b"\xff\xd8\xff" + b"x" * 64); print("     ", d["reply"])
+ok(st == 200 and "Please check: Suspension: Anti-Roll Bar (Front) read as 14" in d["reply"], "a value outside the usual range is filed and named for checking, not refused")
+ok(L.current_tune(Store(), car)["sheet"]["suspension"]["anti_roll_bar"] == [14, 5] and json.loads(L.current_tune(Store(), car)["doubts"])[0]["path"] == "suspension.anti_roll_bar.front", "...the rest of the sheet is filed, the odd value flagged")
+lk = api.car(car)["look"]; ok(lk and lk["doubts"][0]["value"] == 14 and lk["shot"], "the car page asks about it, with the picture it was read from")
+st, d = call("/api/tune-check", dict(car=car, values={"suspension.anti_roll_bar.front": 4})); print("     ", d)
+t = L.current_tune(Store(), car)
+ok(st == 200 and d["ok"] and t["sheet"]["suspension"]["anti_roll_bar"] == [4, 5] and not t["doubts"] and t["source"] == "checked" and api.car(car)["look"] is None,
+   "a corrected value is saved, the flag cleared, the card gone")
+ok(call("/api/tune-check", dict(car=car, values={"suspension.anti_roll_bar.front": "abc"}))[0] == 400, "a value that is not a number is refused")
+st, d = call("/api/shot-reread", dict(id=lk["shot"])); print("     ", d.get("reply"))
+ok(st == 200 and d["ok"] and "Please check" in d["reply"], "a kept screenshot can be read again and filed")
+call("/api/tune-check", dict(car=car, values={"suspension.anti_roll_bar.front": 14}))
+st, d = call("/api/screenshot", raw=b"\xff\xd8\xff" + b"x" * 64)
+ok(d["reply"].startswith("Same sheet as before") and "Please check" not in d["reply"], "a value the driver confirmed is not flagged again when read the same")
 st, d = call("/api/screenshot?source=phone", raw=b""); ok(st == 409 and "virtual phone is turned off" in d["reply"], "fetching from the phone says the phone is off")
 call("/api/settings", dict(agent_on=True)); PAGE1["sheet"]["suspension"]["anti_roll_bar"] = [3, 5]
 cli.URL = URL; pic = os.path.join(tmp, "shot.png"); open(pic, "wb").write(b"\x89PNG\r\n\x1a\n" + b"y" * 64)

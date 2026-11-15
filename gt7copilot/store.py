@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS shots(id INTEGER PRIMARY KEY, at REAL, kind TEXT, car
 """
 # columns added after the first release: (table, column, type)
 ADDED = [("sessions", "tune_id", "INTEGER"), ("sessions", "library_id", "INTEGER"), ("tunes", "library_id", "INTEGER"), ("shots", "cover", "INTEGER"), ("shots", "hash", "TEXT"), ("shots", "taken", "REAL"),
-         ("tracks", "name_src", "TEXT")]      # who named the track: outline (the copilot, from where the car drove) | screen | you
+         ("tracks", "name_src", "TEXT"),
+         ("tunes", "doubts", "TEXT"), ("tunes", "shots", "TEXT"),
+         ("tunes", "slot", "INTEGER")]      # the game's settings sheet number (Settings Sheet 1, 2, ...) when the screenshot showed it   # values to confirm (JSON list), the pictures it was read from (JSON ids)      # who named the track: outline (the copilot, from where the car drove) | screen | you
 
 
 class Store:

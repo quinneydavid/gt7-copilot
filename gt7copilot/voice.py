@@ -483,6 +483,28 @@ class Voice:
             pass
         return out
 
+    def reread(self, shot_id):
+        """Read a kept screenshot again and file it (the car page's "Read again"). -> dict(ok, reply)."""
+        why = CFG.why_not("screenshots")
+        if why:
+            return dict(ok=False, reply=why)
+        if self.busy:
+            return dict(ok=False, reply="Still reading the last one.")
+        self.busy = True
+        try:
+            return dict(ok=True, reply=CAP.reread(self.col, self.store, shot_id, self.log))
+        except RuntimeError as e:
+            return dict(ok=False, reply=str(e))
+        except Exception as e:
+            self.log(f"read again failed: {e!r}")
+            return dict(ok=False, reply="Something went wrong reading the screenshot.")
+        finally:
+            self.busy = False
+
+    def check(self, car, values):
+        """Flagged values confirmed or corrected on the car page. -> dict(ok, reply). Raises ValueError for bad input."""
+        return CAP.check_values(self.col, self.store, int(car), values)
+
     def read_new(self, back=False, speak=False):
         """Read every PS5 capture not read before, in the background (a quarter of a minute per capture). The page follows
         self.job; speak=True says the result when it is done. -> dict(ok, reply) about the start."""

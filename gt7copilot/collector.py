@@ -20,7 +20,25 @@ class Collector:
         self.live = False; self.car = None; self.session_laps = []; self.row = None; self.best_zones = None
         self.guess = None                   # the track this looks like, while the first lap is not done yet
         self.track_news = None              # a track the copilot has just named from its outline (said once)
-        self.tune = None; self.lib_tune = None; self.lib_count = 0     # sheet on file / library tune on the car / tunes on file for the car
+        self._tune = None; self.lib_tune = None; self.lib_count = 0    # sheet on file / library tune on the car / tunes on file for the car
+
+    @property
+    def tune(self):
+        """The sheet on file for the car on track, always the newest one: a sheet filed during a session (screenshot, the car
+        page's check, the agent's tune-set) is what the voice and the calls quote from the next sentence on, so they never say
+        different numbers from the Settings page."""
+        if self.car is not None:
+            try:
+                newest = self.store.q("SELECT MAX(id) m FROM tunes WHERE car=?", self.car)[0]["m"]
+                if newest != (self._tune or {}).get("id"):
+                    self._tune = L.current_tune(self.store, self.car)
+            except Exception:
+                pass
+        return self._tune
+
+    @tune.setter
+    def tune(self, value):
+        self._tune = value
 
     # ---- stream -------------------------------------------------------------------------------------------------
     def feed(self, row, meta, wall=None):

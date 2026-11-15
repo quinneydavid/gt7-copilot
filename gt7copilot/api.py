@@ -190,11 +190,12 @@ def car(code, sid=None):
         shots = st.q("SELECT COUNT(*) n FROM shots WHERE car=?", code)[0]["n"]
     except Exception:
         shots = 0
+    look = needs_look(st, code, mine)
     return dict(row, picture=_cover(st, code), spec=K.spec(code, tyres=True), bests=bests, sessions=sessions(limit=200, car=code),
                 sheet=mine and dict(saved=ts(mine["created"]), note=mine["note"], source=mine["source"], view=S.view(mine["sheet"]),
-                                    check=S.problems(mine["sheet"]), library_tune=(by_id.get(mine["library_id"]) or {}).get("title"),
+                                    check=S.problems(mine["sheet"]), pages_missing=S.pages_missing(mine["sheet"]), slot=mine.get("slot"), library_tune=(by_id.get(mine["library_id"]) or {}).get("title"),
                                     pp=mine["sheet"].get("pp"), power_hp=mine["sheet"].get("power_hp"), weight_kg=mine["sheet"].get("weight_kg")),
-                history=history, suggested=suggested(st, code, sid), library=library, experiments=experiments, screenshots=shots,
+                history=history, suggested=suggested(st, code, sid), library=library, experiments=experiments, screenshots=shots, look=look,
                 telemetry=json.loads(meta[0]["meta"] or "{}") if meta else {})
 
 
@@ -297,6 +298,22 @@ def overview():
 
 # ---- screenshots --------------------------------------------------------------------------------------------------------
 SHOT_KINDS = dict(car_settings_1="Car settings, page 1", car_settings_2="Car settings, page 2", event="Event", other="Other")
+def needs_look(st, code, mine):
+    """What the car page should ask the driver about: values on the sheet to confirm, and the newest settings screenshot of
+    this car if it was not filed (newer than the sheet). None when there is nothing."""
+    try: doubts = json.loads((mine or {}).get("doubts") or "[]")
+    except ValueError: doubts = []
+    try: ids = json.loads((mine or {}).get("shots") or "[]")
+    except ValueError: ids = []
+    failed = st.q("SELECT id, at, reply FROM shots WHERE car=? AND kind IN ('car_settings_1','car_settings_2') AND IFNULL(ok,0)=0 "
+                  "AND at > ? ORDER BY id DESC LIMIT 1", code, (mine or {}).get("created") or 0)
+    if not doubts and not failed:
+        return None
+    shot = failed[0]["id"] if failed else (ids[0] if ids else None)
+    return dict(doubts=doubts, shot=shot, shot_url=shot and f"/shots/{shot}",
+                failed=failed and dict(id=failed[0]["id"], when=ts(failed[0]["at"]), reply=failed[0]["reply"]))
+
+
 SHOT_GROUPS = dict(settings=("car_settings_1", "car_settings_2"), event=("event",), other=("other",))
 
 

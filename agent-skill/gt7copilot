@@ -31,7 +31,7 @@ def main(argv):
     req = urllib.request.Request(url + "/api/cli", json.dumps(dict(argv=a)).encode(),
                                  {"Content-Type": "application/json", "Authorization": "Bearer " + token})
     try:
-        out = json.load(urllib.request.urlopen(req, timeout=240 if a[0] in ("shot", "shot-file") else 30))
+        out = json.load(urllib.request.urlopen(req, timeout=240 if a[0] in ("shot", "shot-file", "shot-reread") else 30))
     except urllib.error.HTTPError as e:
         out = json.loads(e.read() or b"{}") or dict(error=f"HTTP {e.code}")
     except OSError as e:

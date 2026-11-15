@@ -94,3 +94,56 @@ from gt7copilot import sheet as SH
 sh3 = CAP.to_sheet([mr])
 ok(sh3["differential"]["initial_torque"] == [None, 8] and not SH.problems(sh3) and sh3["differential"]["front_rear_torque_split"] == "0:100", "a 0 at the undriven end is filed as no value, and the sheet passes the checks")
 fcode = CAP.match_car("Ferrari 308 GTB '75"); ok(fcode and "308 GTB" in api.car_name(fcode), "the Ferrari is found by the name on its screen")
+
+# ---- 15 Nov: one odd value never throws the page away; what is filed says what the screenshot says ----
+from gt7copilot import tuneadvice as TA
+focus = CAP.match_car("Focus Gr.B Rally Car"); ok(bool(focus), "the Focus Gr.B is found by its name")
+fp = page1("Focus Gr.B Rally Car"); fp["sheet"]["suspension"]["damping_expansion_pct"] = [65, 65]
+r = CAP.file_sheet(col, st, focus, [fp], "test", lambda *a: None, [1])
+t = L.current_tune(st, focus)
+ok(r.startswith("Sheet filed") and "Please check" not in r and t["sheet"]["suspension"]["damping_expansion_pct"] == [65, 65],
+   "the Focus's real damping expansion of 65 is filed, with no flag (the old 30 to 50 limit refused the whole page)")
+odd = page1("Focus Gr.B Rally Car", arb=(14, 5)); odd["sheet"]["suspension"]["damping_expansion_pct"] = [65, 65]
+r = CAP.file_sheet(col, st, focus, [odd], "test", lambda *a: None, [2]); t = L.current_tune(st, focus)
+ok("Please check: Suspension: Anti-Roll Bar (Front) read as 14" in r and t["sheet"]["differential"]["acceleration_sensitivity"] == [10, 15],
+   "one value outside the usual range: the page is filed, that value named for checking")
+try:
+    CAP.file_sheet(col, st, focus, [dict(screen="car_settings_1", car="Focus", sheet={})], "test", lambda *a: None); blank = False
+except RuntimeError as e:
+    blank = "could not read any settings" in str(e)
+ok(blank and L.current_tune(st, focus)["id"] == t["id"], "a page read as nothing is not filed (14 Nov: a blank sheet replaced the real one)")
+# toe direction: same size, other icon -> the old direction is kept, and that disagreement is named
+CAP.check_values(col, st, focus, {"suspension.anti_roll_bar.front": 4})
+flip = page1("Focus Gr.B Rally Car"); flip["sheet"]["suspension"]["damping_expansion_pct"] = [65, 65]; flip["sheet"]["suspension"]["toe_direction"] = ["none", "out"]
+r = CAP.file_sheet(col, st, focus, [flip], "test", lambda *a: None)
+ok("Toe Angle (Rear): the screenshot shows out, the sheet keeps in" in r, "where the filed sheet and the screenshot disagree (toe direction), it is named, never silent")
+lk = api.needs_look(st, focus, L.current_tune(st, focus)); ok(lk and lk["doubts"][-1]["read"] == -0.2, "...and the car page asks about it")
+# advice never moves a value the wrong way when it is already outside the usual range
+TA.S.LIMITS["test.x"] = (30, 50)
+up = TA._fix(dict(test=dict(x=[65, 65])), "test.x", "front", 5, "test"); down = TA._fix(dict(test=dict(x=[65, 65])), "test.x", "front", -5, "test")
+ok(up is None and down["to"] == 60, "a value already above the usual range is never 'raised' down to it, and a lower step works")
+# the copilot on track quotes the newest sheet, also one filed during the session
+from gt7copilot.collector import Collector
+cc = Collector(st, log=lambda *a: None); cc.car = focus; cc.tune = None
+ok(cc.tune and cc.tune["id"] == L.current_tune(st, focus)["id"], "the collector always hands out the newest sheet on file")
+CAP.check_values(None, st, focus, {"suspension.anti_roll_bar.rear": 6})
+ok(cc.tune["sheet"]["suspension"]["anti_roll_bar"][1] == 6, "...so a sheet filed mid-session is what the voice quotes next")
+print("shots: 15 Nov checks passed")
+
+# ---- 15 Nov: several screenshots of one car across the game's settings sheets: only pages of the same sheet combine,
+# the newest screenshot's sheet is the one on the car ----
+P = "Porsche 911 GT3 RS (992) '22"
+pc = CAP.match_car(P); ok(bool(pc), "the Porsche is found by its name")
+def sp1(slot, arb): p = page1(P, arb=arb); p["settings_sheet"] = slot; return p
+def sp2(slot, bb): p = page2(P); p["settings_sheet"] = slot; p["sheet"]["brake_balance"] = bb; return p
+nopage = page2(P); nopage["sheet"]["brake_balance"] = 3                         # page 2 that does not show its sheet number
+# newest first, as the PlayStation App lists them: sheet 1 again (changed), sheet 2 both pages, sheet 1 both pages
+app[:0] = [("p6", sp1(1, (7, 7))), ("p5", sp2(2, -2)), ("p4", sp1(2, (2, 2))), ("p3", nopage), ("p2", sp1(1, (4, 4))), ("p1", sp1(1, (3, 3)))]
+out = CAP.take_new(col, st, log=lambda m: None); print("     ", out["reply"])
+t = L.current_tune(st, pc)
+ok(t["slot"] == 1 and t["sheet"]["suspension"]["anti_roll_bar"] == [7, 7], "the newest screenshot's sheet (sheet 1, its newest page 1) is the one on the car")
+s2 = st.q("SELECT sheet FROM tunes WHERE car=? AND slot=2 ORDER BY id DESC LIMIT 1", pc)
+ok(s2 and json.loads(s2[0]["sheet"])["brake_balance"] == -2 and json.loads(s2[0]["sheet"])["suspension"]["anti_roll_bar"] == [2, 2], "sheet 2 is filed as its own sheet, its two pages together")
+ok(t["sheet"]["brake_balance"] == 3, "a page 2 without a sheet number joins the sheet shot just before it (sheet 1)")
+ok(t["sheet"]["brake_balance"] != -2, "...the brake balance of sheet 2 never leaks into sheet 1")
+print("shots: settings sheets passed")

@@ -16,6 +16,7 @@ PROMPT = """This is a screenshot from Gran Turismo 7. Say which screen it is and
  "other"           anything else
 
 Always give "car": the car name shown (or null) and "summary": one short sentence saying what the screen shows.
+On either Car Settings page also give "settings_sheet": the number in the "Settings Sheet N" title at the top (null if not shown).
 
 For car_settings_1 also give "sheet" with exactly these keys (null when not shown). Pairs are [front, rear].
 {"pp": number, "power": number, "power_unit": "HP" or "PS" or "kW" or "BHP", "weight": number, "weight_unit": "lbs" or "kg",
@@ -239,25 +240,146 @@ def match_car(shown, hint=None):
     return best[0][1]
 
 
-def file_sheet(col, store, car, seen, note, log=print):
-    """Pages read for one car (oldest first) -> its sheet filed. -> the sentence to say. Raises RuntimeError when it does not read cleanly."""
-    prev = L.current_tune(store, car)
+def open_doubts(tune):
+    """The values still to confirm on a filed sheet (list of dicts, see sheet.doubts)."""
+    try: return json.loads((tune or {}).get("doubts") or "[]")
+    except ValueError: return []
+
+
+def slot_of(seen):
+    """The game's settings sheet number the pages show ("Settings Sheet 2" -> 2), or None when no page says."""
+    for p in seen:
+        n = _num(p.get("settings_sheet"))
+        if n and 1 <= n <= 20:
+            return int(n)
+    return None
+
+
+def _neighbour_slot(pages, n, car):
+    """The sheet number for a settings page that does not show one: that of the nearest numbered settings page of the same
+    car, the one captured just before it first (page 1, then the arrow to page 2), else the one just after."""
+    for k in list(range(n - 1, -1, -1)) + list(range(n + 1, len(pages))):
+        q = pages[k]
+        if q.get("slot") and q.get("car") == car:
+            return q["slot"]
+    return None
+
+
+def _base(store, car, slot):
+    """The sheet a new read builds on: the newest one of the same game settings sheet (page 2 of sheet 1 never mixes into
+    sheet 2), or the newest of any when the screenshot does not say which sheet it is."""
+    if slot:
+        r = store.q("SELECT * FROM tunes WHERE car=? AND slot=? ORDER BY id DESC LIMIT 1", car, slot)
+        if r:
+            r[0]["sheet"] = json.loads(r[0]["sheet"]); return r[0]
+        if store.q("SELECT 1 FROM tunes WHERE car=? AND slot IS NOT NULL AND slot<>? LIMIT 1", car, slot):
+            return None                                                   # another sheet is on file: this one starts fresh
+    return L.current_tune(store, car)
+
+
+def file_sheet(col, store, car, seen, note, log=print, shots=None):
+    """Pages read for one car (oldest first) -> its sheet filed. -> the sentence to say.
+    A value outside the usual range does not stop the filing: it is filed, flagged, and named in the sentence so the driver
+    can confirm or correct it on the car page. Raises RuntimeError only when nothing at all could be read."""
+    slot = slot_of(seen)
+    prev = _base(store, car, slot)
+    on_car = L.current_tune(store, car)
+    fresh = to_sheet(seen)                                                # only what this read saw
+    if S.blank(fresh):
+        log("sheet not filed: nothing read")
+        raise RuntimeError("I could not read any settings on that picture.")
     sheet = to_sheet(seen, prev and prev["sheet"])
-    bad = S.problems(sheet)
-    if bad:
-        log(f"sheet not filed: {bad}")
-        raise RuntimeError("I could not read that sheet cleanly. " + bad[0] + ".")
-    name = cli.car_name(car)
-    if prev and not S.diff(prev["sheet"], sheet):
-        return f"Same sheet as before for the {name}. Nothing changed."
+    was = open_doubts(prev); was_paths = {d["path"] for d in was}
+    old = S.flat(prev["sheet"]) if prev else {}
+    now = S.flat(fresh)
+    doubts = [d for d in S.doubts(fresh)                                  # a value confirmed before and read the same again is fine
+              if not (d["path"] in old and old[d["path"]] == d["value"] and d["path"] not in was_paths)]
+    doubts += [d for d in was if d["path"] not in now]                    # flags on settings this read did not see stay
+    filed = S.flat(sheet)                                                 # what is filed must say what the screenshot says
+    for path, v in now.items():
+        if path in filed and path != "parts" and not S._same(filed[path], v) and path not in {d["path"] for d in doubts}:
+            base, end = path.rsplit(".", 1) if path.rsplit(".", 1)[-1] in S.ENDS else (path, None)
+            game = S.game_label(base, end)
+            text = (f"{game}: the screenshot shows {'out' if v < 0 else 'in'}, the sheet keeps {'out' if filed[path] < 0 else 'in'}"
+                    if base == "suspension.toe_deg" else f"{game}: the screenshot shows {v}, the sheet has {filed[path]}")
+            doubts.append(dict(path=path, value=filed[path], read=v, lo=None, hi=None, game=game, text=text))
+    if doubts:
+        log(f"sheet filed with values to check: {[d['text'] for d in doubts]}")
+    check = (" Please check: " + "; ".join(d["text"] for d in doubts) + ". Confirm or correct it on the car page.") if doubts else ""
+    gone = S.pages_missing(sheet)
+    if gone:
+        check += f" {S.PAGE_NAMES[gone[0]].split(' (')[0].capitalize()} of the settings is not on file yet: take a screenshot of it too." if len(gone) == 1 else ""
+    name = cli.car_name(car) + (f" (Settings Sheet {slot})" if slot else "")
+    switched = bool(on_car and prev and on_car["id"] != prev["id"])      # the newest screenshot shows another sheet than the one on file
+    if prev and not switched and not S.diff(prev["sheet"], sheet) and [d["path"] for d in doubts] == [d["path"] for d in was]:
+        return f"Same sheet as before for the {name}. Nothing changed." + check
     changes = S.diff(prev["sheet"], sheet) if prev else []
-    store.x("INSERT INTO tunes(car,created,source,sheet,note,library_id) VALUES(?,?,?,?,?,?)", car, time.time(), "screenshot",
-            json.dumps(sheet), note, L.link_for_sheet(store, car, sheet))
-    col.tune = L.current_tune(store, car) if col.car == car else col.tune
+    store.x("INSERT INTO tunes(car,created,source,sheet,note,library_id,doubts,shots,slot) VALUES(?,?,?,?,?,?,?,?,?)", car, time.time(), "screenshot",
+            json.dumps(sheet), note, L.link_for_sheet(store, car, sheet), json.dumps(doubts) if doubts else None,
+            json.dumps([i for i in (shots or []) if i]) or None, slot)
+    if (on_car and on_car.get("slot") and slot and on_car["slot"] != slot) or (not prev and on_car):
+        check = f" This is now the sheet on the car (your newest screenshot)." + check
+    if col is not None and col.car == car:
+        col.tune = L.current_tune(store, car)
     if not prev:
-        return f"Sheet filed for the {name}."
+        return f"Sheet filed for the {name}." + check
     said = "; ".join(f"{c['setting'].replace(' › ', ' ')}, {c['mine']} to {c['theirs']}" for c in changes[:3] if c["setting"] != "parts")
-    return f"Sheet filed for the {name}. {len(changes)} {'change' if len(changes) == 1 else 'changes'}" + (f": {said}." if said else ".")
+    return f"Sheet filed for the {name}. {len(changes)} {'change' if len(changes) == 1 else 'changes'}" + (f": {said}." if said else ".") + check
+
+
+def check_values(col, store, car, values):
+    """The driver confirmed or corrected flagged values on the car page. values = {flat path: number}. A new sheet is filed
+    with them (source "checked"); the flags on those settings are cleared. -> dict(ok, reply)."""
+    prev = L.current_tune(store, car)
+    if not prev:
+        raise ValueError("No settings sheet on file for this car.")
+    sheet = copy.deepcopy(prev["sheet"]); left = open_doubts(prev); fixed = []
+    for path, v in (values or {}).items():
+        n = _num(v)
+        if n is None:
+            raise ValueError(f"{path}: type a number.")
+        n = int(n) if n.is_integer() else n
+        if path not in S.flat(sheet) and path not in {d["path"] for d in left}:
+            raise ValueError(f"{path} is not on the sheet.")
+        S.set_value(sheet, path, n); fixed.append(path)
+    left = [d for d in left if d["path"] not in fixed]
+    store.x("INSERT INTO tunes(car,created,source,sheet,note,library_id,doubts,shots,slot) VALUES(?,?,?,?,?,?,?,?,?)", car, time.time(), "checked",
+            json.dumps(sheet), "values checked on the car page", L.link_for_sheet(store, car, sheet), json.dumps(left) if left else None, prev.get("shots"), prev.get("slot"))
+    if col is not None and getattr(col, "car", None) == car:
+        col.tune = L.current_tune(store, car)
+    changed = [c for c in S.diff(prev["sheet"], sheet)]
+    return dict(ok=True, reply=f"Saved. {len(fixed)} {'value' if len(fixed) == 1 else 'values'} checked" +
+                (f", {len(changed)} corrected." if changed else ", all as read.") + (f" {len(left)} still to check." if left else ""))
+
+
+def reread(col, store, shot_id, log=print):
+    """Read a kept picture again and file what it shows (after a reader or limit fix, or from the car page). -> the sentence."""
+    r = store.q("SELECT * FROM shots WHERE id=?", int(shot_id))
+    if not r:
+        raise RuntimeError("That screenshot is no longer kept.")
+    r = r[0]
+    with open(store.shot_path(r["id"], r["mime"] or "image/jpeg"), "rb") as f:
+        image = f.read()
+    seen = read(image); kind = seen.get("screen")
+    store.x("UPDATE shots SET kind=?, summary=? WHERE id=?", kind, (seen.get("summary") or seen.get("car") or "")[:500] or None, r["id"])
+    log(f"shot {r['id']} read again: {kind}: {seen.get('summary')}")
+    try:
+        if kind in ("car_settings_1", "car_settings_2"):
+            car = r["car"] or match_car(seen.get("car") or "", col.car if col is not None else None)
+            if not car:
+                raise RuntimeError(f"I read a settings sheet for the {seen.get('car') or 'car'}, but I do not know which car that is.")
+            out = file_sheet(col, store, car, [seen], f"read again from screenshot {r['id']}", log, [r["id"]])
+            store.x("UPDATE shots SET ok=1, reply=?, car=? WHERE id=?", out, car, r["id"])
+            return out
+        if kind == "event":
+            out = note_event(col, store, seen.get("event") or {})
+        else:
+            raise RuntimeError("That is not a settings or event screen. " + (seen.get("summary") or ""))
+    except RuntimeError as e:
+        store.x("UPDATE shots SET ok=0, reply=? WHERE id=?", str(e), r["id"])
+        raise
+    store.x("UPDATE shots SET ok=1, reply=? WHERE id=?", out, r["id"])
+    return out
 
 
 def note_event(col, store, ev):
@@ -320,11 +442,17 @@ def take_new(col, store, log=print, back=False, limit=BATCH, progress=None):
     mark = lambda ids, ok, reply, car=None: [store.x("UPDATE shots SET ok=?, reply=?, car=IFNULL(?, car) WHERE id=?", int(ok), reply, car, i) for i in ids if i]
     groups, said, cars, failed = {}, [], [], 0
     for p in pages:
+        if p["seen"].get("screen") in ("car_settings_1", "car_settings_2"):
+            p["car"] = match_car(p["seen"].get("car") or "", col.car); p["slot"] = slot_of([p["seen"]])
+    for n, p in enumerate(pages):
         kind = p["seen"].get("screen")
         if kind in ("car_settings_1", "car_settings_2"):
-            shown = p["seen"].get("car") or ""
-            car = match_car(shown, col.car)
-            groups.setdefault(car or ("?" + shown.lower()), dict(car=car, shown=shown, pages=[]))["pages"].append(p)
+            shown = p["seen"].get("car") or ""; car = p["car"]
+            slot = p["slot"] or _neighbour_slot(pages, n, car)            # a page without a number joins the sheet shot just before it
+            if slot and not p["slot"]:
+                p["seen"]["settings_sheet"] = slot
+            g = groups.setdefault((car or ("?" + shown.lower()), slot), dict(car=car, shown=shown, pages=[]))
+            g["pages"].append(p); g["last"] = n                            # filed in order of their newest capture: the newest sheet ends on the car
         elif kind == "event":
             try:
                 r = note_event(col, store, p["seen"].get("event") or {}); mark([p["sid"]], True, r, col.car)
@@ -333,7 +461,7 @@ def take_new(col, store, log=print, back=False, limit=BATCH, progress=None):
                 log(f"event not noted: {e!r}"); mark([p["sid"]], False, "The event could not be noted."); failed += 1
         else:
             mark([p["sid"]], False, "Not a settings or event screen. " + (p["seen"].get("summary") or ""))
-    for g in groups.values():
+    for g in sorted(groups.values(), key=lambda g: g["last"]):
         ids = [p["sid"] for p in g["pages"]]
         if not g["car"]:
             r = f"I read a settings sheet for the {g['shown'] or 'car'}, but I do not know which car that is."
@@ -341,7 +469,7 @@ def take_new(col, store, log=print, back=False, limit=BATCH, progress=None):
         try:
             n = len({p["seen"].get("screen") for p in g["pages"]})
             r = file_sheet(col, store, g["car"], [p["seen"] for p in g["pages"]],
-                           "read from PS5 capture" + ("s " if len(ids) > 1 else " ") + ", ".join(str(p["cid"]) for p in g["pages"]) + (" (2 pages)" if n == 2 else ""), log)
+                           "read from PS5 capture" + ("s " if len(ids) > 1 else " ") + ", ".join(str(p["cid"]) for p in g["pages"]) + (" (2 pages)" if n == 2 else ""), log, ids)
             mark(ids, True, r, g["car"]); cars.append(g["car"]); said.append(r)
         except RuntimeError as e:
             mark(ids, False, str(e), g["car"]); said.append(f"{cli.car_name(g['car'])}: {e}"); failed += 1
@@ -386,7 +514,8 @@ def take(col, store, log=print, image=None, kept=None):
                 raise RuntimeError("uploads are read one page at a time")
             j2, c2 = grab(2); second = read(j2)
             other = "car_settings_2" if kind == "car_settings_1" else "car_settings_1"
-            if second.get("screen") == other and (second.get("car") or "") == (first.get("car") or ""):
+            if second.get("screen") == other and (second.get("car") or "") == (first.get("car") or "") \
+                    and (not slot_of([first]) or not slot_of([second]) or slot_of([first]) == slot_of([second])):
                 seen.append(second); log(f"capture {c2}: {other} of the same car, used too"); keep(store, j2, second, str(c2), mine if kept is None else kept)
         except Exception as e:
             log(f"second capture not used: {e}")
@@ -405,7 +534,7 @@ def take(col, store, log=print, image=None, kept=None):
             store.x(f"UPDATE shots SET car=? WHERE id IN ({','.join('?' * len(ids))})", car, *ids) if ids else None
         except Exception:
             pass
-        return file_sheet(col, store, car, seen, ("read from an uploaded picture" if image is not None else f"read from PS5 capture {cid}") + (" (2 pages)" if len(seen) == 2 else ""), log)
+        return file_sheet(col, store, car, seen, ("read from an uploaded picture" if image is not None else f"read from PS5 capture {cid}") + (" (2 pages)" if len(seen) == 2 else ""), log, list(mine if kept is None else kept))
     if kind == "event":
         return note_event(col, store, first.get("event") or {})
     raise RuntimeError("That is not a settings or event screen. " + (first.get("summary") or ""))

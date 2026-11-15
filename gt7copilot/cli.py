@@ -27,6 +27,7 @@
                                    back = look through the whole list, not only the ones since the last read. Runs in the background:
   gt7copilot shots-job             how far that is, and its result when done
   gt7copilot shot-file IMAGE       read a picture of a settings or event screen (JPEG, PNG, WebP) and file it
+  gt7copilot shot-reread ID        read a kept screenshot again (Screenshots page id) and file what it shows
   gt7copilot ask "what should I change next?"   the page's chat: answered by the model from the driver's laps and settings
   gt7copilot say "text"                  speak through the copilot page
   gt7copilot hear "copilot, fuel"           what a spoken command would do and answer (voice control, typed)
@@ -221,9 +222,16 @@ def run(st, a):
         lib = int(extra.pop(extra.index("--lib") + 1)) if "--lib" in extra else None
         extra = [x for x in extra if x != "--lib"]
         lib = lib or L.link_for_sheet(st, car, sheet)
+        prev = L.current_tune(st, car)
+        # the sheet replaces the one on file as a whole: name what it leaves out, so a page filed by hand never silently drops
+        # the other page (15 Nov: page 1 filed by hand dropped page 2 of the Focus Gr.B)
+        dropped = sorted(set(S.flat(prev["sheet"])) - set(S.flat(sheet))) if prev else []
+        dropped += [f"hardware.{k}" for k in ((prev or {}).get("sheet") or {}).get("hardware", {}) if k not in (sheet.get("hardware") or {})]
         st.x("INSERT INTO tunes(car,created,source,sheet,note,library_id) VALUES(?,?,?,?,?,?)", car, time.time(), "agent",
              json.dumps(sheet), " ".join(extra) or None, lib)
-        return dict(ok=True, library_tune=lib, check=S.problems(sheet))
+        return dict(ok=True, library_tune=lib, check=S.problems(sheet), pages_missing=S.pages_missing(sheet),
+                    dropped_from_previous_sheet=dropped,
+                    note="The sheet REPLACES the one on file. Start from tune-show's newest sheet and change what you need." if dropped else None)
     if cmd == "tune-show":
         code = int(rest[0]) if rest else latest_car()
         return [dict(saved=ts(t["created"]), note=t["note"], library_tune=t["library_id"], sheet=json.loads(t["sheet"]))
@@ -276,6 +284,13 @@ def run(st, a):
             return json.load(urllib.request.urlopen(req, timeout=200))
         except urllib.error.HTTPError as e:
             return json.loads(e.read() or b"{}") or dict(ok=False, reply=f"HTTP {e.code}")
+    if cmd == "shot-reread":                         # done by the running collector, like shot
+        req = urllib.request.Request(URL + "/api/shot-reread", data=json.dumps(dict(id=int(rest[0]))).encode(), method="POST",
+                                     headers={"Content-Type": "application/json", "X-GT7C": "1"})
+        try:
+            return json.load(urllib.request.urlopen(req, timeout=200))
+        except urllib.error.HTTPError as e:
+            return json.loads(e.read() or b"{}") or dict(ok=False, reply=f"HTTP {e.code}")
     if cmd in ("shots-new", "shots-job"):            # every capture not read before, in the background; shots-job follows it
         back = "?back=1" if rest and rest[0] in ("back", "--back", "all") else ""
         req = urllib.request.Request(URL + ("/api/screenshots/read" + back if cmd == "shots-new" else "/api/screenshots/job"),
@@ -308,7 +323,7 @@ def main(argv=None):
             req = urllib.request.Request(REMOTE + "/api/cli", json.dumps(dict(argv=a)).encode(),
                                          {"Content-Type": "application/json", "Authorization": "Bearer " + os.environ.get("GT7C_TOKEN", "")})
             try:
-                out = json.load(urllib.request.urlopen(req, timeout=240 if a[0] in ("shot", "shot-file") else 30))
+                out = json.load(urllib.request.urlopen(req, timeout=240 if a[0] in ("shot", "shot-file", "shot-reread") else 30))
             except urllib.error.HTTPError as e:
                 out = json.loads(e.read() or b"{}") or dict(error=f"HTTP {e.code}")
         else:

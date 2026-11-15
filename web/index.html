@@ -86,6 +86,8 @@ td.r,th.r{text-align:right;padding-right:0}
 .empty b{display:block;color:var(--text2);font-size:16px;margin-bottom:4px}
 .note{font-size:13.5px;margin-top:8px}.note.ok{color:var(--good)}.note.bad{color:var(--crit)}
 .banner{border-left:3px solid var(--warn);margin-bottom:12px}
+.lookgrid{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:16px;align-items:start}.lookpic img{width:100%;border-radius:8px;display:block}
+@media (max-width:700px){.lookgrid{grid-template-columns:1fr}}
 input[type=text],input[type=search],input[type=password],input[type=number],select{padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
 input[type=search]{width:100%}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -458,6 +460,7 @@ async function pageCar(r,alive){const code=+r.args[0],sub=r.args[1]||'overview',
   const tabs=[['overview','Overview'],['settings','Settings'+(c.sheet?'':' <span class="count">none</span>')],['suggested','Suggested tune'+(nrec?` <span class="count">${plural(nrec,'change')}</span>`:'')],['library',`Library tunes <span class="count">${c.library.length}</span>`],['sessions',`Sessions <span class="count">${c.sessions.length}</span>`]];
   let h=`<div class="crumb"><a href="#cars">Cars</a> / ${esc(c.name)}</div><div class="hero${c.picture?' pic':''}">${c.picture?`<img src="${c.picture}" alt="">`:''}<div><h1>${esc(c.name)}</h1><div>${carPills(c)}${c.sheet&&c.sheet.pp?`<span class="pill blue">PP ${esc(c.sheet.pp)} as tuned</span>`:''}</div></div></div>`;
   h+=`<div class="seg">${tabs.map(([k,t])=>`<a href="#cars/${code}${k==='overview'?'':'/'+k}" aria-current="${k===sub}">${t}</a>`).join('')}</div>`;
+  h+=lookCard(c.look);
   if(sub==='overview'){
     h+=`<div class="grid tiles">${tile('Laps',c.laps,plural(c.sessions.length,'session'))}${tile('Distance',km(c.km)+'<small> km</small>',plural(c.tracks,'track'))}${tile('Time on track',dur(c.minutes),c.first_driven?'since '+esc(c.first_driven.slice(0,10)):'')}${tile('Last driven',c.last_driven?esc(c.last_driven.slice(0,10)):'–',c.last_driven?esc(c.last_driven.slice(11)):'not driven yet')}</div>`;
     h+=`<div class="grid split gap"><div class="card"><h2>Best laps</h2><div class="sub">Your fastest lap in this car on each track</div>${c.bests.length?`<div class="scroll"><table><tr><th>Track</th><th>Best</th><th>Laps</th><th>Set on</th></tr>${c.bests.map(b=>`<tr class="row" onclick="go('sessions/${b.session}')"><td><a href="#tracks/${b.track_id}" onclick="event.stopPropagation()">${esc(b.track)}</a></td><td><b>${esc(b.best)}</b></td><td>${b.laps}</td><td class="mut">${esc(b.set_on||'')}</td></tr>`).join('')}</table></div>`:'<div class="mut small">No timed laps on a known track yet.</div>'}</div>
@@ -472,8 +475,9 @@ async function pageCar(r,alive){const code=+r.args[0],sub=r.args[1]||'overview',
   }
   if(sub==='settings'){const s=c.sheet;
     if(!s)h+=empty('No settings sheet on file for this car.','Open the Car Settings screen in the game, press the Create button for a screenshot, then <a href="#screenshots">read it on the Screenshots page</a> or say “Copilot, take a screenshot”.');
-    else{h+=gtSheet(s.view,{title:'Car Settings',sub:`As saved ${s.saved}${s.library_tune?' · the “'+s.library_tune+'” library tune':''}${s.note?' · '+s.note:''}`,pp:s.pp,power_hp:s.power_hp,weight_kg:s.weight_kg});
-      if(s.check&&s.check.length)h+=`<div class="card banner gap"><b>Worth a second look:</b> ${s.check.map(esc).join('; ')}</div>`;
+    else{h+=gtSheet(s.view,{title:'Car Settings'+(s.slot?' · Settings Sheet '+s.slot:''),sub:`As saved ${s.saved}${s.library_tune?' · the “'+s.library_tune+'” library tune':''}${s.note?' · '+s.note:''}`,pp:s.pp,power_hp:s.power_hp,weight_kg:s.weight_kg});
+      if((s.pages_missing||[]).length===1)h+=`<div class="card banner gap"><b>Page ${s.pages_missing[0]} of the Car Settings is not on file yet.</b> <span class="mut">${s.pages_missing[0]===2?'Supercharger, intake and exhaust, brakes, steering, drivetrain, engine and bodywork':'Tyres, suspension, differential, aero, ECU and transmission'}. Take a screenshot of that page and it is added to this sheet; nothing on file is lost.</span></div>`;
+      if(!c.look&&s.check&&s.check.length)h+=`<div class="card banner gap"><b>Worth a second look:</b> ${s.check.map(esc).join('; ')}</div>`;
       h+=`<div class="grid two gap"><div class="card"><h2>Every sheet saved for this car</h2><div class="sub">Newest first, with what changed from the one before</div><table>${c.history.map((x,i)=>`<tr><td style="white-space:nowrap" class="mut">${esc(x.saved)}${i===0?'<div><span class="pill good">on the car</span></div>':''}</td><td>${x.changes==null?'First sheet on file':x.changes.length?x.changes.map(y=>`${esc(y.setting)}: ${esc(Array.isArray(y.before)?y.before.join(', '):y.before)} → <b>${esc(Array.isArray(y.after)?y.after.join(', '):y.after)}</b>`).join('<br>'):'No change'}${x.note?`<div class="small mut">${esc(x.note)}</div>`:''}</td></tr>`).join('')}</table></div>
         <div class="card"><h2>What your changes did</h2><div class="sub">Laps before and after each change, on tracks driven with both</div>${c.experiments.some(e=>e.outcome)?`<table>${c.experiments.filter(e=>e.outcome).map(e=>`<tr><td>${e.changed.map(y=>`${esc(y.setting)}: ${esc(y.before)} → <b>${esc(y.after)}</b>`).join('<br>')}${e.clean_test?'<div><span class="pill blue">one setting changed</span></div>':''}</td><td>${e.outcome.map(o=>`${esc(o.track)}: <b style="color:${o.best_change_s<0?'var(--good)':'var(--crit)'}">${sgn(o.best_change_s,3)} s</b>`).join('<br>')}</td></tr>`).join('')}</table>`:'<div class="mut small">Nothing to compare yet. Change one setting, save the new sheet, and drive the same track again.</div>'}
         ${c.screenshots?`<div style="margin-top:12px"><a class="btn small" href="#screenshots?car=${code}">${plural(c.screenshots,'screenshot')} of this car</a></div>`:''}</div></div>`}}
@@ -504,8 +508,25 @@ async function pageCar(r,alive){const code=+r.args[0],sub=r.args[1]||'overview',
       <details style="margin-top:12px"><summary>Show the whole sheet</summary><div style="margin-top:10px">${gtSheet(t.sheet_view,{title:t.title,sub:t.author?'by '+t.author:''})}</div></details></div>`}).join(''):
       empty('No library tunes on file for this car.','Known-good tunes from other drivers are filed through the agent or the command line (<code>gt7copilot lib-add</code>), each with where it came from. They appear here with your own laps on them.')}
   if(sub==='sessions')h+=c.sessions.length?sessionList(c.sessions,{noCar:true}):empty('No sessions in this car yet.','');
-  main().innerHTML=h;
+  main().innerHTML=h;lookWire(c.look,code);
   if($('sgSel'))$('sgSel').onchange=()=>go(`cars/${code}/suggested?session=${$('sgSel').value}`)}
+/* "Needs a look": values read outside the usual range (filed, flagged) and a settings screenshot that was not filed.
+   The picture sits next to the values so the driver can confirm or correct them in one go. */
+function lookCard(l){if(!l)return'';
+  const d=l.doubts||[];
+  return `<div class="card banner look gap" id="look"><div class="lookgrid">${l.shot_url?`<a href="${l.shot_url}" target="_blank" rel="noopener" class="lookpic"><img src="${l.shot_url}" alt="The screenshot the sheet was read from" loading="lazy"></a>`:''}<div>
+    <h2 style="margin-top:0">Needs a look</h2>
+    ${l.failed?`<p style="margin:4px 0 10px">Your screenshot from ${esc(l.failed.when)} was not filed: ${esc(l.failed.reply||'')}</p>`:''}
+    ${d.length?`<p class="mut small" style="margin:4px 0 10px">Compare these with the screenshot: values outside the usual range, or where the screenshot and the sheet disagree. Correct any that are wrong, then save.</p>
+      <table>${d.map((x,i)=>`<tr><td>${esc(x.game)}<div class="small mut">${x.lo!=null?`usually ${esc(x.lo)} to ${esc(x.hi)}`:esc(x.text)}</div></td><td><input type="number" step="any" id="lk${i}" value="${esc(x.value)}" aria-label="${esc(x.game)}" style="width:96px"></td></tr>`).join('')}</table>`:''}
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${d.length?'<button class="btn primary" id="lookSave">Values are right, save</button>':''}${l.shot?'<button class="btn" id="lookRead">Read the screenshot again</button>':''}</div>
+    <div class="small mut" id="lookNote" style="margin-top:8px" role="status"></div></div></div></div>`}
+function lookWire(l,code){if(!l)return;const note=t=>{$('lookNote').textContent=t};
+  if($('lookSave'))$('lookSave').onclick=async()=>{const values={};(l.doubts||[]).forEach((x,i)=>{values[x.path]=$('lk'+i).value});
+    $('lookSave').disabled=true;note('Saving…');const x=await adminPost('/api/tune-check',{car:code,values});
+    if(x.ok){note(x.reply);setTimeout(route,900)}else{$('lookSave').disabled=false;note(x.error||x.reply||'Not saved.')}};
+  if($('lookRead'))$('lookRead').onclick=async()=>{$('lookRead').disabled=true;note('Reading the screenshot, about half a minute…');
+    const x=await adminPost('/api/shot-reread',{id:l.shot});note(x.reply||x.error||'Done.');$('lookRead').disabled=false;if(x.ok)setTimeout(route,1500)}}
 
 /* ================= tracks ================= */
 async function pageTracks(r,alive){if(r.args[0])return pageTrack(r,alive);

@@ -18,9 +18,10 @@ TEMPLATE = {
     "hardware": {},
 }
 
-# Limits that hold for every car in GT7 (anything outside is almost certainly a misread photo). Per-car limits are not checked.
+# Usual ranges in GT7. A value outside is filed anyway and flagged "check" (see doubts): some cars and parts allow more
+# than most (15 Nov 2026: the Focus Gr.B runs damping expansion 65), and refusing a whole page over one number lost real sheets.
 LIMITS = {
-    "suspension.anti_roll_bar": (1, 10), "suspension.damping_compression_pct": (20, 40), "suspension.damping_expansion_pct": (30, 50),
+    "suspension.anti_roll_bar": (1, 10), "suspension.damping_compression_pct": (10, 100), "suspension.damping_expansion_pct": (10, 100),
     "suspension.negative_camber_deg": (0, 6), "differential.initial_torque": (5, 60),
     "differential.acceleration_sensitivity": (5, 60), "differential.braking_sensitivity": (5, 60),
     "ecu_output_pct": (70, 100), "power_restrictor_pct": (70, 100), "ballast_kg": (0, 200), "ballast_position": (-50, 50),
@@ -198,17 +199,67 @@ def label(path):
     return path.replace("_", " ").replace(".", " › ")
 
 
-def problems(sheet):
-    """Reasons to doubt a sheet (unknown sections, values outside what GT7 allows). Empty list = looks fine."""
-    out = [f"unknown section '{k}'" for k in sheet if k not in TEMPLATE]
-    out += [f"unknown hardware entry '{k}'" for k in (sheet.get("hardware") or {}) if k not in HARDWARE_KEYS]
+def doubts(sheet):
+    """Values outside the usual range, one dict each: path (flat, with the end), value, lo, hi, game (the game's words), text.
+    They are filed all the same; the car page asks the driver to confirm or correct them."""
+    out = []
     for path, v in flat(sheet).items():
-        base = path.rsplit(".", 1)[0] if path.rsplit(".", 1)[-1] in ENDS else path
-        if base in LIMITS and isinstance(v, (int, float)):
+        base, end = (path.rsplit(".", 1) if path.rsplit(".", 1)[-1] in ENDS else (path, None))
+        if base in LIMITS and isinstance(v, (int, float)) and not isinstance(v, bool):
             lo, hi = LIMITS[base]
             if not lo <= v <= hi:
-                out.append(f"{label(path)} = {v} is outside {lo} to {hi}")
+                game = game_label(base, end)
+                out.append(dict(path=path, value=v, lo=lo, hi=hi, game=game, text=f"{game} read as {_plain(v)} (usually {lo} to {hi})"))
     return out
+
+
+def _plain(v):
+    return int(v) if isinstance(v, float) and v.is_integer() else v
+
+
+PAGE2_HARDWARE = ("turbocharger", "anti_lag", "anti_lag_system", "intercooler", "supercharger", "air_cleaner", "muffler", "exhaust_manifold",
+                  "brake_system", "brake_pads", "handbrake", "handbrake_torque_pct", "brake_balance", "steering_angle_kit", "four_ws",
+                  "rear_steering_angle", "clutch_flywheel", "propeller_shaft", "bore_up", "stroke_up", "engine_balance", "polish_ports",
+                  "high_lift_cam", "titanium_rods_pistons", "racing_crank", "high_compression_pistons", "weight_reduction_1",
+                  "weight_reduction_2", "weight_reduction_3", "weight_reduction_4", "weight_reduction_5", "body_rigidity")
+PAGE_NAMES = {1: "page 1 (tyres, suspension, differential, aero, ECU, transmission)",
+              2: "page 2 (supercharger, intake and exhaust, brakes, steering, drivetrain, engine, bodywork)"}
+
+
+def pages_missing(sheet):
+    """The game's Car Settings pages with nothing on this sheet: [] when both are on file, else [1], [2] or [1, 2].
+    Each screenshot adds its page to the sheet already on file, so the missing page only needs its own screenshot."""
+    f = flat(sheet or {}); hw = (sheet or {}).get("hardware") or {}
+    p1 = any(k.startswith(("suspension.", "differential.", "tyres.", "aero.")) for k in f)
+    p2 = (sheet or {}).get("brake_balance") is not None or any(hw.get(k) not in (None, "") for k in PAGE2_HARDWARE)
+    return [n for n, on in ((1, p1), (2, p2)) if not on]
+
+
+def blank(sheet):
+    """True when a sheet holds no setting at all (a page that was read as nothing)."""
+    return not any(v not in (None, "", []) for k, v in flat(sheet).items())
+
+
+def set_value(sheet, path, value):
+    """Set one flat path ('suspension.damping_expansion_pct.front', 'brake_balance') on a sheet, in place."""
+    parts = path.split(".")
+    end = parts.pop() if parts[-1] in ENDS else None
+    node = sheet
+    for k in parts[:-1]:
+        node = node.setdefault(k, {})
+    if end is None:
+        node[parts[-1]] = value
+    else:
+        pair = list(node.get(parts[-1]) or [None, None])
+        pair[ENDS.index(end)] = value
+        node[parts[-1]] = pair
+
+
+def problems(sheet):
+    """Reasons to doubt a sheet (unknown sections, values outside the usual range), as sentences. Empty list = looks fine."""
+    out = [f"unknown section '{k}'" for k in sheet if k not in TEMPLATE]
+    out += [f"unknown hardware entry '{k}'" for k in (sheet.get("hardware") or {}) if k not in HARDWARE_KEYS]
+    return out + [d["text"] for d in doubts(sheet)]
 
 
 def _same(a, b):

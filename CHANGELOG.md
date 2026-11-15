@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.0
+- A settings screenshot is never thrown away over one number. A value outside the usual range is filed as read, and the reply says which one to check ("Please check: Suspension: Anti-Roll Bar (Front) read as 14"). Before, one odd value refused the whole page and the car kept its old settings.
+- Damping ratios are no longer limited to 20-40 (compression) and 30-50 (expansion). Some cars go further: the Focus Gr.B runs expansion 65.
+- New "Needs a look" card at the top of a car's pages. It shows the screenshot next to any value to check, and a settings screenshot of that car that was not filed, with the reason. Correct the values or confirm them in one go, or read the screenshot again.
+- What is filed always matches the screenshot. Where they differ (the toe direction icon is kept from the old sheet when the number is the same), the difference is named and goes on the card. It is never silent.
+- A page read as nothing is no longer filed. A blank sheet had replaced a real one.
+- The copilot on track quotes the newest sheet on file, including one filed during the session. Before, it kept the sheet from the session start and could say different numbers from the Settings page.
+- Suggested changes never move a value the wrong way when it is already outside the usual range.
+- Several screenshots of one car are sorted out by the game's settings sheet number ("Settings Sheet 1", "Settings Sheet 2"). Page 1 and page 2 are combined only when they belong to the same sheet. A page that does not show its number joins the sheet shot just before it. Where the same page was shot more than once, the newest screenshot wins. The sheet in your newest settings screenshot counts as the one on the car; older sheets stay in the history.
+- The Settings tab says when page 1 or page 2 is not on file yet, and the screenshot reply asks for it.
+- `gt7copilot tune-set` lists any settings the new sheet leaves out compared with the old one, so filing one page by hand can no longer silently drop the other.
+- `gt7copilot shot-reread ID` reads a kept screenshot again and files it.
+
 ## 0.13.5
 - Anything said about fuel while driving ("I have half a tank", "only four laps left", "is that enough to finish") is answered from the laps, not by the chat model. The model had answered "That's plenty" when the laps said the fuel was short.
 - Every fuel answer ends with the same verdict as the fuel calls (rich, hold, lean with a target, or pit by lap N). The fuel read-out used its own, looser rule and could say "enough to finish" while the calls said otherwise.

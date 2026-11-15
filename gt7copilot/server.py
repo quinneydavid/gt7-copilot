@@ -395,6 +395,22 @@ def serve(port, hub, get_state, say, set_enabled, hear=None, hear_text=None, sho
                 else:                                    # an empty name takes the name away: the copilot may name it again from its outline
                     st.x("UPDATE tracks SET name=NULL, name_src=NULL WHERE id=?", tid)
                 return self._json(200, dict(ok=True, name=name or None))
+            if path in ("/api/tune-check", "/api/shot-reread") and earpiece_ok(self.headers) is None:   # the car page's "needs a look" card
+                if self.headers.get("X-GT7C") != "1":
+                    return self._json(400, dict(error="missing X-GT7C header"))
+                if reader is None:
+                    return self._json(409, dict(ok=False, reply="The screenshot reader is not running."))
+                try:
+                    body = json.loads(self._body(20_000) or b"{}")
+                    if path == "/api/tune-check":
+                        vals = body.get("values")
+                        if not isinstance(vals, dict) or not vals:
+                            raise ValueError("Nothing to save.")
+                        return self._json(200, reader.check(int(body.get("car")), vals))
+                    out = reader.reread(int(body.get("id")))
+                    return self._json(200 if out.get("ok") else 409, out)
+                except (ValueError, TypeError) as e:
+                    return self._json(400, dict(ok=False, error=str(e) or "bad request"))
             if path == "/api/ask" and earpiece_ok(self.headers) is None:      # a question from the page's chat; nothing is stored
                 if self.headers.get("X-GT7C") != "1":
                     return self._json(400, dict(error="missing X-GT7C header"))
